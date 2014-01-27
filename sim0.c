@@ -2,6 +2,7 @@
  * Z80SIM  -  a	Z80-CPU	simulator
  *
  * Copyright (C) 1987-2008 by Udo Munk
+ * 2014 fork by Jack Carrozzo <jack@crepinc.com>
  *
  * History:
  * 28-SEP-87 Development on TARGON/35 with AT&T Unix System V.3
@@ -47,7 +48,7 @@
 
 int load_core(void);
 static void save_core(void);
-static int load_mos(int, char *), load_hex(char *), checksum(char *);
+static int load_mos(int, char *), load_hex(char *), load_bin(char *), checksum(char *);
 extern void int_on(void), int_off(void), mon(void);
 extern void init_io(void), exit_io(void);
 extern int exatoi(char *);
@@ -266,11 +267,15 @@ int load_file(char *s)
 	read(fd, (char *) fileb, 5); /*	read first 5 bytes of file */
 	if (*fileb == (BYTE) 0xff) {	/* Mostek header ? */
 		lseek(fd, 0l, 0);
+		printf("Reading as Mostek file.\n");
 		return (load_mos(fd, fn));
 	}
 	else {
 		close(fd);
-		return (load_hex(fn));
+		//printf("Reading as Intel hex file.\n"); // TODO: add flag for this
+		//return (load_hex(fn));
+		printf("Reading as flat binary file...\n");
+		return (load_bin(fn));
 	}
 }
 
@@ -304,6 +309,38 @@ static int load_mos(int fd, char *fn)
 	printf("LOADED: %04x\n\n", readed);
 	PC = wrk_ram;
 	return(rc);
+}
+
+/*
+ *  Loader for flat binary
+ */
+static int load_bin(char *fn)
+{
+  FILE *fd;
+  int addr = 0;
+  int saddr = 0;
+  int eaddr = 0;
+
+  if ((fd = fopen(fn, "rb")) == NULL) {
+    printf("can't open file %s\n", fn);
+    return(1);
+  }
+
+	fseek(fd, 0, SEEK_END);
+	unsigned long flen=ftell(fd);
+	fseek(fd, 0, SEEK_SET);
+
+	fread(ram+addr,flen,1,fd);
+	eaddr=addr+flen;
+
+  fclose(fd);
+  printf("\nLoader statistics for file %s:\n", fn);
+  printf("START : 0x%04x\n", saddr);
+  printf("END   : 0x%04x\n", eaddr);
+  printf("LOADED: 0x%04x (%d)\n\n", eaddr - saddr + 1, eaddr - saddr + 1);
+  PC = wrk_ram = ram + saddr;
+
+  return(0);
 }
 
 /*
