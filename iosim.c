@@ -2,6 +2,7 @@
  * Z80SIM  -  a	Z80-CPU	simulator
  *
  * Copyright (C) 1987-2008 by Udo Munk
+ * 2014 fork by Jack Carrozzo <jack@crepinc.com>
  *
  * This modul of the simulator contains a simple terminal I/O
  * simulation as an example.
@@ -47,8 +48,15 @@
  *	for all port addresses.
  */
 static BYTE io_trap(void);
+
+static BYTE p000_in(void);
+static void p000_out(BYTE);
+
 static BYTE p001_in(void);
 static void p001_out(BYTE);
+
+static BYTE p002_in(void);
+static void p002_out(BYTE);
 
 /*
  *	This two dimensional array contains function pointers
@@ -56,8 +64,9 @@ static void p001_out(BYTE);
  *	The first entry is for input, the second for output.
  */
 static BYTE (*port[256][2]) () = {
-	{ io_trap, io_trap },		/* port 0 */
-	{ p001_in, p001_out }		/* port	1 */
+	{ p000_in, p000_out },		/* port 0 */
+	{ p001_in, p001_out },		/* port	1 */
+	{ p002_in, p002_out }
 };
 
 /*
@@ -76,7 +85,7 @@ void init_io(void)
 {
 	register int i;
 
-	for (i = 2; i <= 255; i++)
+	for (i = 3; i <= 255; i++) // TODO remember to increment this
 		port[i][0] = port[i][1]	= io_trap;
 }
 
@@ -126,6 +135,15 @@ static BYTE io_trap(void)
 	return((BYTE) 0);
 }
 
+static BYTE p000_in(void) {
+  printf("--- Port 0 read.\n");
+  return 0x80;
+}
+
+static void p000_out(BYTE data) {
+  printf("--- Port 0 written: 0x%02x\n",data);
+}
+
 /*
  *	I/O function port 1 read:
  *	Read next byte from stdin.
@@ -143,4 +161,14 @@ static void p001_out(BYTE data)
 {
 	putchar((int) data);
 	fflush(stdout);
+}
+
+// ---
+static BYTE p002_in(void) {
+	printf("--- Port 2 read.\n");
+	return 0x80;
+}
+
+static void p002_out(BYTE data) {
+	printf("--- Port 2 written: 0x%02x\n",data);
 }
