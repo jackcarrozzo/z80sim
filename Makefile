@@ -15,65 +15,65 @@ LFLAGS = -s
 # Solaris 9
 #LFLAGS = -s -lrt
 
-OBJ =	sim0.o \
-	sim1.o \
-	sim2.o \
-	sim3.o \
-	sim4.o \
-	sim5.o \
-	sim6.o \
-	sim7.o \
-	simctl.o \
+OBJ =	main.o \
+	instr_single.o \
+	instr_cb.o \
+	instr_dd.o \
+	instr_ed.o \
+	instr_fd.o \
+	instr_ddcb.o \
+	instr_fdcb.o \
+	cli.o \
 	disas.o	\
-	simint.o \
-	iosim.o	\
-	simfun.o \
-	simglb.o
+	interrupt.o \
+	io.o	\
+	util.o \
+	global.o
 
 z80sim : $(OBJ)
 	$(CC) $(OBJ) $(LFLAGS) -o z80sim
 
-sim0.o : sim0.c	sim.h simglb.h
-	$(CC) $(CFLAGS) sim0.c
+main.o : main.c	config.h global.h
+	$(CC) $(CFLAGS) main.c
 
-sim1.o : sim1.c	sim.h simglb.h
-	$(CC) $(CFLAGS) sim1.c
+instr_single.o : instr_single.c	config.h global.h
+	$(CC) $(CFLAGS) instr_single.c
 
-sim2.o : sim2.c	sim.h simglb.h
-	$(CC) $(CFLAGS) sim2.c
+instr_cb.o : instr_cb.c	config.h global.h
+	$(CC) $(CFLAGS) instr_cb.c
 
-sim3.o : sim3.c	sim.h simglb.h
-	$(CC) $(CFLAGS) sim3.c
+instr_dd.o : instr_dd.c	config.h global.h
+	$(CC) $(CFLAGS) instr_dd.c
 
-sim4.o : sim4.c	sim.h simglb.h
-	$(CC) $(CFLAGS) sim4.c
+instr_ed.o : instr_ed.c	config.h global.h
+	$(CC) $(CFLAGS) instr_ed.c
 
-sim5.o : sim5.c	sim.h simglb.h
-	$(CC) $(CFLAGS) sim5.c
+instr_fd.o : instr_fd.c	config.h global.h
+	$(CC) $(CFLAGS) instr_fd.c
 
-sim6.o : sim6.c	sim.h simglb.h
-	$(CC) $(CFLAGS) sim6.c
+instr_ddcb.o : instr_ddcb.c	config.h global.h
+	$(CC) $(CFLAGS) instr_ddcb.c
 
-sim7.o : sim7.c	sim.h simglb.h
-	$(CC) $(CFLAGS) sim7.c
+instr_fdcb.o : instr_fdcb.c	config.h global.h
+	$(CC) $(CFLAGS) instr_fdcb.c
 
-simctl.o : simctl.c sim.h simglb.h
-	$(CC) $(CFLAGS) simctl.c
+cli.o : cli.c config.h global.h
+	$(CC) $(CFLAGS) cli.c
 
 disas.o	: disas.c
 	$(CC) $(CFLAGS) disas.c
 
-simint.o : simint.c sim.h simglb.h
-	$(CC) $(CFLAGS) simint.c
+interrupt.o : interrupt.c config.h global.h
+	$(CC) $(CFLAGS) interrupt.c
 
-iosim.o	: iosim.c sim.h	simglb.h
-	$(CC) $(CFLAGS) iosim.c
+io.o	: io.c config.h	global.h
+	$(CC) $(CFLAGS) io.c
 
-simfun.o : simfun.c sim.h
-	$(CC) $(CFLAGS) simfun.c
+util.o : util.c config.h
+	$(CC) $(CFLAGS) util.c
 
-simglb.o : simglb.c sim.h
-	$(CC) $(CFLAGS) simglb.c
+global.o : global.c config.h
+	$(CC) $(CFLAGS) global.c
 
 clean:
 	rm -f *.o core z80sim

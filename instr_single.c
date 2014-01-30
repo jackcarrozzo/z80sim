@@ -28,8 +28,8 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <time.h>
-#include "sim.h"
-#include "simglb.h"
+#include "config.h"
+#include "global.h"
 
 #ifdef FRONTPANEL
 #include "../../frontpanel/frontpanel.h"

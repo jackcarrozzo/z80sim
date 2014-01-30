@@ -40,8 +40,8 @@
 #include <stdio.h>
 #include <termios.h>
 #include <signal.h>
-#include "sim.h"
-#include "simglb.h"
+#include "config.h"
+#include "global.h"
 
 static void user_int(int), quit_int(int), term_int(int);
 extern void exit_io(void), int_off();

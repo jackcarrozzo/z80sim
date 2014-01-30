@@ -30,8 +30,8 @@
  *	starting with 0xdd 0xcb
  */
 
-#include "sim.h"
-#include "simglb.h"
+#include "config.h"
+#include "global.h"
 
 #ifdef FRONTPANEL
 #include "../../frontpanel/frontpanel.h"

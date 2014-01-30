@@ -42,8 +42,8 @@
 #include <memory.h>
 #include <ctype.h>
 #include <signal.h>
-#include "sim.h"
-#include "simglb.h"
+#include "config.h"
+#include "global.h"
 
 extern void cpu(void);
 extern void disass(unsigned char **, int);
@@ -641,7 +641,7 @@ static void do_break(char *s)
 {
 #ifndef	SBSIZE
 	puts("Sorry, no breakpoints available");
-	puts("Please recompile with SBSIZE defined in sim.h");
+	puts("Please recompile with SBSIZE defined in config.h");
 #else
 	register int i;
 
@@ -694,7 +694,7 @@ static void do_hist(char *s)
 {
 #ifndef	HISIZE
 	puts("Sorry, no history available");
-	puts("Please recompile with HISIZE defined in sim.h");
+	puts("Please recompile with HISIZE defined in config.h");
 #else
 	int i,	l, b, e, c, sa;
 
@@ -755,7 +755,7 @@ static void do_count(char *s)
 {
 #ifndef	WANT_TIM
 	puts("Sorry, no t-state count available");
-	puts("Please recompile with WANT_TIM defined in sim.h");
+	puts("Please recompile with WANT_TIM defined in config.h");
 #else
 	while (isspace((int)*s))
 		s++;

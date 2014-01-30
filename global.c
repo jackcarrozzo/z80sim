@@ -29,7 +29,7 @@
  *	This modul contains all the global variables
  */
 
-#include "sim.h"
+#include "config.h"
 
 #define MAXCHAN	5	/* max number of channel for I/O busy detect */
 

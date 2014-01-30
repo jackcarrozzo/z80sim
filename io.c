@@ -40,8 +40,8 @@
  */
 
 #include <stdio.h>
-#include "sim.h"
-#include "simglb.h"
+#include "config.h"
+#include "global.h"
 
 /*
  *	Forward declarations of the I/O functions

@@ -28,7 +28,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "sim.h"
+#include "config.h"
 
 /*
  *	Forward	declarations

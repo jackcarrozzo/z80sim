@@ -33,7 +33,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <termios.h>
-#include "sim.h"
+#include "config.h"
 
 /*
  *	atoi for hexadecimal numbers

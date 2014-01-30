@@ -41,8 +41,8 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <memory.h>
-#include "sim.h"
-#include "simglb.h"
+#include "config.h"
+#include "global.h"
 
 #define BUFSIZE	256		/* buffer size for file I/O */
 
