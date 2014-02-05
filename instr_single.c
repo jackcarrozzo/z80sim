@@ -39,7 +39,7 @@
 void check_gui_break(void);
 #endif
 
-static int op_notimpl(void);
+//static int op_notimpl(void);
 static int op_nop(void), op_halt(void), op_scf(void);
 static int op_ccf(void), op_cpl(void), op_daa(void);
 static int op_ei(void), op_di(void);
@@ -430,32 +430,45 @@ void cpu(void)
 		}
 #endif
 
+#define DEBUG_INTS 1
+
 #ifdef WANT_INT		/* CPU interrupt handling */
-		if (int_type)
+		if (int_type) // if there is an interrupt available to handle
+			// TODO: rewrite the interrupt handling, this is wack
+
 			switch (int_type) {
-			case INT_NMI:	/* non maskable interrupt */
-				int_type = INT_NONE;
-				IFF <<= 1;
+			case INT_NMI: // NMIs	
+				int_type = INT_NONE; // ack the interrupt
+
+				IFF <<= 1;									// TODO: is this the right behavior?
+
+				// this block stores the current execution address on the stack
 #ifdef WANT_SPC
 				if (STACK <= ram)
 					STACK =	ram + 65536L;
 #endif
-				*--STACK = (PC - ram) >> 8;
+				*--STACK = (PC - ram) >> 8; // put MSB of PC on stack and decrement SP
 #ifdef WANT_SPC
 				if (STACK <= ram)
 					STACK =	ram + 65536L;
 #endif
-				*--STACK = (PC - ram);
-				PC = ram + 0x66;
+				*--STACK = (PC - ram);			// LSB of PC
+
+				// set the new PC
+				PC = ram + 0x66;						// static entry point of NMIs 
+
 				break;
-			case INT_INT:	/* maskable interrupt */
-				if (IFF != 3)
-					break;
-				IFF = 0;
+			case INT_INT:	// maskable ints
+				if (3!=IFF) break; 
+				//IFF = 0; // why did the interrupt flags get reset here?
+	
 				switch (int_mode) {
-				case 0:
+				case 0: // TODO
+					printf("Interrupt mode 0 unimplemented! Doing nothing.\n");
+					int_type = INT_NONE; // ack the interrupt anyway
+
 					break;
-				case 1:
+				case 1: // mode 1 works: just jp to 0x0038;
 					int_type = INT_NONE;
 #ifdef WANT_SPC
 					if (STACK <= ram)
@@ -468,8 +481,24 @@ void cpu(void)
 #endif
 					*--STACK = (PC - ram);
 					PC = ram + 0x38;
+
 					break;
 				case 2:
+					int_vect=(I<<8)+int_lsb; // address of the vector table entry
+
+					// push current PC onto stack
+					// TODO: this doesnt bounds check like the others yet
+					*--STACK = (PC - ram) >> 8;
+					*--STACK = (PC - ram);
+
+					// set the new PC from the vector lookup table
+					PC = ram + *(ram + int_vect); 			// LSB of the entry address
+					PC += (*(ram + int_vect + 1)) << 8;	// MSB
+					
+					printf("--- Mode 2 Int: Lookup from 0x%04x, points to 0x%04lx.\n",int_vect,PC-ram);
+
+					int_type = INT_NONE; // ack the interrupt
+
 					break;
 				}
 				break;
@@ -526,12 +555,12 @@ void cpu(void)
  *	Trap not implemented opcodes. This function may be usefull
  *	later to trap some wanted opcodes.
  */
-static int op_notimpl(void)
+/*static int op_notimpl(void) // currently unreferenced and generates compiler warnings
 {
 	cpu_error = OPTRAP1;
 	cpu_state = STOPPED;
 	return(0);
-}
+}*/
 
 static int op_nop(void)			/* NOP */
 {

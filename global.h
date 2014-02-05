@@ -43,7 +43,7 @@ extern BYTE	cpu_bus;
 extern BYTE	ram[],*wrk_ram, cpu_state;
 
 extern int	s_flag, l_flag, m_flag, x_flag, break_flag, i_flag, f_flag,
-		cpu_error, int_type, int_mode, cntl_c, cntl_bs,
+		cpu_error, int_type, int_mode, int_lsb, int_vect, cntl_c, cntl_bs,
 		parrity[], sb_next;
 
 #ifdef Z80_UNDOC

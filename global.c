@@ -114,6 +114,8 @@ char xfn[LENCMD];		/* buffer for filename (option -x) */
 BYTE cpu_state;			/* status of CPU emulation */
 int cpu_error;			/* error status of CPU emulation */
 int int_type;			/* type	of interrupt */
+int int_lsb;			/* data byte for vectored interupts */
+int int_vect;			/* vector for mode 2 interrupts */
 int tmax;			/* max t-stats to execute in 10ms */
 int int_mode;			/* CPU interrupt mode (IM 0, IM 1, IM 2) */
 int cntl_c;			/* flag	for cntl-c entered */
