@@ -44,6 +44,8 @@
 /*#define FRONTPANEL*/	/* no frontpanel emulation */
 /*#define BUS_8080*/	/* no emulation of 8080 bus status */
 
+#define INT_DEBUG 1 // prints when an interrupt fires
+
 /*
  *	The following defines may be modified and activated by
  *	user, to print her/his copyright for a developed system,

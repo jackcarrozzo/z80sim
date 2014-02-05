@@ -430,8 +430,6 @@ void cpu(void)
 		}
 #endif
 
-#define DEBUG_INTS 1
-
 #ifdef WANT_INT		/* CPU interrupt handling */
 		if (int_type) // if there is an interrupt available to handle
 			// TODO: rewrite the interrupt handling, this is wack
@@ -456,6 +454,8 @@ void cpu(void)
 
 				// set the new PC
 				PC = ram + 0x66;						// static entry point of NMIs 
+		
+				if (INT_DEBUG) printf("--- NMI: Jumping to 0x0066\n");
 
 				break;
 			case INT_INT:	// maskable ints
@@ -482,6 +482,8 @@ void cpu(void)
 					*--STACK = (PC - ram);
 					PC = ram + 0x38;
 
+					if (INT_DEBUG) printf("--- Mode 1 Int: Jumping to 0x0038\n");
+
 					break;
 				case 2:
 					int_vect=(I<<8)+int_lsb; // address of the vector table entry
@@ -495,7 +497,8 @@ void cpu(void)
 					PC = ram + *(ram + int_vect); 			// LSB of the entry address
 					PC += (*(ram + int_vect + 1)) << 8;	// MSB
 					
-					printf("--- Mode 2 Int: Lookup from 0x%04x, points to 0x%04lx.\n",int_vect,PC-ram);
+					if (INT_DEBUG) // TODO: mvoe this mode into a cli-configurable var
+						printf("--- Mode 2 Int: Lookup from 0x%04x, points to 0x%04lx.\n",int_vect,PC-ram);
 
 					int_type = INT_NONE; // ack the interrupt
 
