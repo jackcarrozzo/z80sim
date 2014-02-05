@@ -10,7 +10,7 @@ CFLAGS = -O3 -c -Wall
 #CFLAGS = -O3 -mcpu=i686 -minline-all-stringops -c -Wall
 
 # Linux, BSD
-LFLAGS = -s
+#LFLAGS = -s # generates depreciated warning on OSX
 
 # Solaris 9
 #LFLAGS = -s -lrt
