@@ -93,13 +93,19 @@ void mon(void)
 			do_go("");
 	}
 	while (eoj) {
-		next:
+		// these edits prevent a new cli prompt being printed at each interrupt
+		// TODO: find out why that happens in the first place
+		// (btw, that GOTO was here when i got here...) -jc
+
 		printf(">>> ");
-		fflush(stdout);
-		if (fgets(cmd, LENCMD, stdin) == NULL) {
-			putchar('\n');
+    fflush(stdout);
+
+		next:
+		if (fgets(cmd, LENCMD, stdin) == NULL) { 
+			if (0==int_mode) putchar('\n');
 			goto next;
 		}
+
 		switch (*cmd) {
 		case '\n':
 			do_step();
