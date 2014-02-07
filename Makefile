@@ -9,6 +9,8 @@ CFLAGS = -O3 -c -Wall
 # AMD Opteron and gcc 3.3.5
 #CFLAGS = -O3 -mcpu=i686 -minline-all-stringops -c -Wall
 
+# TODO: clang stuff vs real gcc (osx)
+
 # Linux, BSD
 #LFLAGS = -s # generates depreciated warning on OSX
 
