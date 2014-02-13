@@ -74,16 +74,12 @@ void run_counters(void) {
 		if (!ctc[i].ints_enabled) continue; // dont bother with counters that arent
 																				// sending interupts
 
-		//printf("Handling ctc%d: c=%d p=%d\n",i,ctc[i].c_val,ctc[i].p_val);
-
 		if (!--ctc[i].p_val) { // prescaler empty
 			ctc[i].p_val=ctc[i].prescaler; // refill it
 
 			if (!--ctc[i].c_val) { // counter empty
 				ctc[i].c_val=ctc[i].tc; // refill it
 				
-				//printf("Setting Interupt! chan %d vector 0x%02x\n",i,ctc[i].ivector);
-
 				int_lsb=ctc[i].ivector; // set the interupt
 				int_type=INT_INT;
 			}
@@ -196,8 +192,9 @@ static void p_ctc_out(BYTE port, BYTE data) {
 			printf("(ints disabled)\n");
 		}
 	} else { // vector word
-		// TODO: look up what happens when an interrupt vector word is written
-		// to a different channel than that selected by A1-0
+		// there is only one interrupt vector register on the chip, since
+		// bits 2-1 contain the channel. TODO: emulate this.
+
 		thisctc->ivector=(data&0xf8)|(chan<<1);  
 			
 		printf("--- CTC chan %d ivector set: 0x%02x.\n",chan,data);
