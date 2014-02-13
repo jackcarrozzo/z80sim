@@ -31,20 +31,17 @@ static void p_ctc_out(BYTE,BYTE);
 static BYTE p_dart_in(BYTE);
 static void p_dart_out(BYTE,BYTE);
 
-static BYTE timer; // timer enable flag 
-static void int_timer(int);
-
 typedef struct {
 	BYTE ints_enabled;
 	BYTE tc_next;
 	BYTE tc;
 	BYTE ivector;
+	BYTE c_val;
+	BYTE prescaler;
+	BYTE p_val;
 } ctc_state;
 
 static ctc_state ctc[4];
-//static struct ctc_state ctc1;
-//static struct ctc_state ctc2;
-//static struct ctc_state ctc3;
 
 void init_io(void) { // called at start to init all ports
 	int i;
@@ -54,10 +51,44 @@ void init_io(void) { // called at start to init all ports
 		ctc[i].tc_next=0;
 		ctc[i].tc=255;
 		ctc[i].ivector=0;
+		ctc[i].c_val=255;
+		ctc[i].prescaler=255;
+		ctc[i].p_val=255;
 	}
 }
 
 void exit_io(void) { // called at exit
+}
+
+// this is written to emulate CTC funtionality if run once per clock - 
+//		however, it is currently called from the cpu wrapper and thus only 
+//		runs once per instruction, and is as such 4-8x slower than realtime.
+// (TODO)
+// also, this currently doesnt queue interrupts: only the highest priority is 
+//		sent to the cpu and then cleared. TODO: make this match the hardware (ints
+//		can be acknowledged separately)
+void run_counters(void) {
+	int i;
+
+	for (i=3;i>=0;i--) { // in interrupt priority order (most important last)
+		if (!ctc[i].ints_enabled) continue; // dont bother with counters that arent
+																				// sending interupts
+
+		//printf("Handling ctc%d: c=%d p=%d\n",i,ctc[i].c_val,ctc[i].p_val);
+
+		if (!--ctc[i].p_val) { // prescaler empty
+			ctc[i].p_val=ctc[i].prescaler; // refill it
+
+			if (!--ctc[i].c_val) { // counter empty
+				ctc[i].c_val=ctc[i].tc; // refill it
+				
+				//printf("Setting Interupt! chan %d vector 0x%02x\n",i,ctc[i].ivector);
+
+				int_lsb=ctc[i].ivector; // set the interupt
+				int_type=INT_INT;
+			}
+		}
+	}		
 }
 
 // handles all IN opcodes
@@ -133,21 +164,14 @@ static void p_8255_out(BYTE port, BYTE data) {
   }
 }
 
-/*
- *  I/O handler for read timer
- *  return current status of 10ms interrupt timer,
- *  1 = enabled, 0 = disabled
- */
-static BYTE p_ctc_in(BYTE port)
-{
-  printf("!!! time_in()\n");
-  return(timer);
+// reads the current value of the down counter on the specified channel
+static BYTE p_ctc_in(BYTE port) {
+	BYTE chan=(port&0x03);
+	printf("--- CTC chan %d read: 0x%02x.\n",chan,ctc[chan].c_val);
+	return ctc[chan].c_val;
 }
 
 static void p_ctc_out(BYTE port, BYTE data) {
-  static struct itimerval tim;
-  static struct sigaction newact;
-
 	BYTE chan=(port&0x03);
 	ctc_state *thisctc;
 	thisctc=&ctc[chan];
@@ -167,20 +191,8 @@ static void p_ctc_out(BYTE port, BYTE data) {
 		printf("--- CTC chan %d config word set: 0x%02x. ",chan,data);
 
 		if (thisctc->ints_enabled) {
-	    newact.sa_handler = int_timer;
-	    sigaction(SIGALRM, &newact, NULL);
-	    tim.it_value.tv_sec = 0;
-	    tim.it_value.tv_usec = 10000; // 10ms TODO: link this to TC properly
-			setitimer(ITIMER_REAL, &tim, NULL);
-
 			printf("(ints enabled)\n");
 		} else {
-    	newact.sa_handler = SIG_IGN;
-	    sigaction(SIGALRM, &newact, NULL);
-	    tim.it_value.tv_sec = 0;
-	    tim.it_value.tv_usec = 0;
-	  	setitimer(ITIMER_REAL, &tim, NULL);
-
 			printf("(ints disabled)\n");
 		}
 	} else { // vector word
@@ -190,14 +202,6 @@ static void p_ctc_out(BYTE port, BYTE data) {
 			
 		printf("--- CTC chan %d ivector set: 0x%02x.\n",chan,data);
 	}
-}
-
-// fired from the timer, sets interrupts
-static void int_timer(int sig) {
-	printf("I-- int_timer()\n");	
-
-  int_lsb = ctc[0].ivector; // LSB for vector table (mode 2 only)
-  int_type = INT_INT;
 }
 
 static BYTE p_dart_in(BYTE port) {

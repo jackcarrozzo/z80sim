@@ -43,7 +43,7 @@
 #define	SBSIZE	4	/* number of software breakpoints */
 /*#define FRONTPANEL*/	/* no frontpanel emulation */
 /*#define BUS_8080*/	/* no emulation of 8080 bus status */
-
+#define WANT_COUNTERS // enable counter management
 #define INT_DEBUG 1 // prints when an interrupt fires
 
 /*
@@ -53,7 +53,7 @@
  */
 
 #define	USR_COM	"Jack Carrozzo <jack@crepinc.com>"
-#define	USR_REL	"IO config specific to my SBC."
+#define	USR_REL	"Fixes and update, "
 #define	USR_CPR	"Copyright (C) 2014"
 
 

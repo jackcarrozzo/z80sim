@@ -128,13 +128,15 @@ usage:				printf("usage:\t%s -s -l -i -z -mn -fn -xfilename\n", pn);
 	puts(" #      #     #  #   #          #     #    #    #     #");
 	puts("#######  #####    ###            #####    ###   #     #");
 	printf("\nRelease %s, %s\n", RELEASE, COPYR);
+	#ifdef USR_COM
+  printf("%s %s, %s\n", USR_REL, USR_CPR, USR_COM);
+#endif
+
 	if (f_flag > 0)
 		printf("\nCPU speed is %d MHz\n", f_flag);
 	else
 		printf("\nCPU speed is unlimited\n");
-#ifdef	USR_COM
-	printf("\n%s Release %s, %s\n", USR_COM, USR_REL, USR_CPR);
-#endif
+	
 	fflush(stdout);
 
 	wrk_ram	= PC = ram;

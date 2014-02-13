@@ -39,6 +39,10 @@
 void check_gui_break(void);
 #endif
 
+#ifdef WANT_COUNTERS
+extern void run_counters(void);
+#endif
+
 //static int op_notimpl(void);
 static int op_nop(void), op_halt(void), op_scf(void);
 static int op_ccf(void), op_cpl(void), op_daa(void);
@@ -428,6 +432,10 @@ void cpu(void)
 			t_flag = 1;	/* switch measurement on */
 			t_states = 0L;	/* initialize counted T-states */
 		}
+#endif
+
+#ifdef WANT_COUNTERS
+		run_counters();
 #endif
 
 #ifdef WANT_INT		/* CPU interrupt handling */
