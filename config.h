@@ -51,11 +51,11 @@
  *	user, to print her/his copyright for a developed system,
  *	which contains the Z80-CPU simulation as a part.
  */
-/*
-#define	USR_COM	"XYZ-System Simulation"
-#define	USR_REL	"x.y"
-#define	USR_CPR	"Copyright (C) 20xx by XYZ"
-*/
+
+#define	USR_COM	"Jack Carrozzo <jack@crepinc.com>"
+#define	USR_REL	"IO config specific to my SBC."
+#define	USR_CPR	"Copyright (C) 2014"
+
 
 /*
  *	The following lines of this file should not be modified by user

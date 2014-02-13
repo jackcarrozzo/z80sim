@@ -34,7 +34,27 @@ static void p_dart_out(BYTE,BYTE);
 static BYTE timer; // timer enable flag 
 static void int_timer(int);
 
+typedef struct {
+	BYTE ints_enabled;
+	BYTE tc_next;
+	BYTE tc;
+	BYTE ivector;
+} ctc_state;
+
+static ctc_state ctc[4];
+//static struct ctc_state ctc1;
+//static struct ctc_state ctc2;
+//static struct ctc_state ctc3;
+
 void init_io(void) { // called at start to init all ports
+	int i;
+
+	for (i=0;i<4;i++) {
+		ctc[i].ints_enabled=0;
+		ctc[i].tc_next=0;
+		ctc[i].tc=255;
+		ctc[i].ivector=0;
+	}
 }
 
 void exit_io(void) { // called at exit
@@ -46,8 +66,10 @@ BYTE io_in(BYTE adr) {
 		case ADDR_8255: return p_8255_in(adr);
 		case ADDR_CTC:	return p_ctc_in(adr);
 		case ADDR_DART:	return p_dart_in(adr);
-		default:				return io_trap(adr);
+		default:				io_trap(adr);
 	}
+
+	return 0;
 }
 
 // handles all OUT opcodes
@@ -56,7 +78,7 @@ void io_out(BYTE adr, BYTE data) {
 		case ADDR_8255: return p_8255_out(adr,data);
     case ADDR_CTC:  return p_ctc_out(adr,data);
     case ADDR_DART: return p_dart_out(adr,data);
-    default:        return io_trap(adr);
+    default:        io_trap(adr);
   }
 }
 
@@ -126,38 +148,55 @@ static void p_ctc_out(BYTE port, BYTE data) {
   static struct itimerval tim;
   static struct sigaction newact;
 
-  printf("--- timer set (%d)\n",data);
+	BYTE chan=(port&0x03);
+	ctc_state *thisctc;
+	thisctc=&ctc[chan];
 
-  if (data>0) {
-    timer = 1;
-    newact.sa_handler = int_timer;
-    sigaction(SIGALRM, &newact, NULL);
-    tim.it_value.tv_sec = 0;
-    tim.it_value.tv_usec = 10000;
+	if (thisctc->tc_next) { // if we indicated the next write would be the tc
+		thisctc->tc=data;
+		thisctc->tc_next=0;
 
-    if (1==data) {
-      tim.it_interval.tv_sec = 0;
-      tim.it_interval.tv_usec = 10000;  // 10ms
-    } else { // TODO: other values we might want here
-      tim.it_interval.tv_sec = 1;       // 1s
-      tim.it_interval.tv_usec = 0;
-    }
+		printf("--- CTC chan %d TC set to 0x%02x.\n",chan,data);
+		return;
+	}
 
-    tim.it_interval.tv_usec = 0;
-    setitimer(ITIMER_REAL, &tim, NULL);
-  } else { // 0: disable timer
-    timer = 0;
-    newact.sa_handler = SIG_IGN;
-    sigaction(SIGALRM, &newact, NULL);
-    tim.it_value.tv_sec = 0;
-    tim.it_value.tv_usec = 0;
-    setitimer(ITIMER_REAL, &tim, NULL);
-  }
+	if (data&0x01) { // control word
+		thisctc->ints_enabled=(data&0x80)?1:0;
+		thisctc->tc_next=(data&0x04)?1:0;
+
+		printf("--- CTC chan %d config word set: 0x%02x. ",chan,data);
+
+		if (thisctc->ints_enabled) {
+	    newact.sa_handler = int_timer;
+	    sigaction(SIGALRM, &newact, NULL);
+	    tim.it_value.tv_sec = 0;
+	    tim.it_value.tv_usec = 10000; // 10ms TODO: link this to TC properly
+			setitimer(ITIMER_REAL, &tim, NULL);
+
+			printf("(ints enabled)\n");
+		} else {
+    	newact.sa_handler = SIG_IGN;
+	    sigaction(SIGALRM, &newact, NULL);
+	    tim.it_value.tv_sec = 0;
+	    tim.it_value.tv_usec = 0;
+	  	setitimer(ITIMER_REAL, &tim, NULL);
+
+			printf("(ints disabled)\n");
+		}
+	} else { // vector word
+		// TODO: look up what happens when an interrupt vector word is written
+		// to a different channel than that selected by A1-0
+		thisctc->ivector=(data&0xf8)|(chan<<1);  
+			
+		printf("--- CTC chan %d ivector set: 0x%02x.\n",chan,data);
+	}
 }
 
 // fired from the timer, sets interrupts
 static void int_timer(int sig) {
-  int_lsb = 0x50; // LSB for vector table (mode 2 only)
+	printf("I-- int_timer()\n");	
+
+  int_lsb = ctc[0].ivector; // LSB for vector table (mode 2 only)
   int_type = INT_INT;
 }
 
