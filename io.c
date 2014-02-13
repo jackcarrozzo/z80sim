@@ -183,6 +183,7 @@ static void p_ctc_out(BYTE port, BYTE data) {
 	if (data&0x01) { // control word
 		thisctc->ints_enabled=(data&0x80)?1:0;
 		thisctc->tc_next=(data&0x04)?1:0;
+		thisctc->prescaler=(data&0x20)?255:15;
 
 		printf("--- CTC chan %d config word set: 0x%02x. ",chan,data);
 
