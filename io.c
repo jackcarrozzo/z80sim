@@ -12,6 +12,7 @@
 
 #include "config.h"
 #include "global.h"
+#include "io.h"
 
 // base addresses for io devices (assumes that A1-0 are 
 // used in the devices themselves, and A4-2 are demuxed
@@ -19,27 +20,6 @@
 #define ADDR_8255 0
 #define ADDR_CTC	4
 #define ADDR_DART	8
-
-static BYTE io_trap(BYTE);
-
-static BYTE p_8255_in(BYTE);
-static void p_8255_out(BYTE,BYTE);
-
-static BYTE p_ctc_in(BYTE);
-static void p_ctc_out(BYTE,BYTE);
-
-static BYTE p_dart_in(BYTE);
-static void p_dart_out(BYTE,BYTE);
-
-typedef struct {
-	BYTE ints_enabled;
-	BYTE tc_next;
-	BYTE tc;
-	BYTE ivector;
-	BYTE c_val;
-	BYTE prescaler;
-	BYTE p_val;
-} ctc_state;
 
 static ctc_state ctc[4];
 

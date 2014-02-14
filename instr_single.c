@@ -441,6 +441,7 @@ void cpu(void)
 #ifdef WANT_INT		/* CPU interrupt handling */
 		if (int_type) // if there is an interrupt available to handle
 			// TODO: rewrite the interrupt handling, this is wack
+			// http://www.z80.info/interrup.htm
 
 			switch (int_type) {
 			case INT_NMI: // NMIs	
