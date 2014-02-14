@@ -210,6 +210,7 @@ static BYTE p_dart_in(BYTE port) {
 	else						printf("--- DART channel %c data read.\n",chan);
 
 	return 0x00;
+	//return((BYTE) getchar());
 }
 
 static void p_dart_out(BYTE port, BYTE data) {
@@ -226,15 +227,3 @@ static void p_dart_out(BYTE port, BYTE data) {
   else            printf("--- DART channel %c data written: %02x\n",chan,data);
 }
 
-/*
-static BYTE p001_in(void)
-{
-	return((BYTE) getchar());
-}
-
-static void p001_out(BYTE data)
-{
-	putchar((int) data);
-	fflush(stdout);
-}
-*/
