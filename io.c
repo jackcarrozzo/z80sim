@@ -101,62 +101,40 @@ static BYTE io_trap(BYTE adr) {
 }
 
 static BYTE p_8255_in(BYTE port) {
-	switch(port&0x03) {
-		case 0:
-			printf("--- 8255 port A read.\n");
-			break;
-		case 1:
-			printf("--- 8255 port B read.\n");
-			break;
-		case 2:
-			printf("--- 8255 port C read.\n");
-			break;
-		case 3:
-			printf("--- 8255 control port read.\n");
-			break;
-		default:
-			printf("--- 8255 port %d makes no sense!\n",port);
-	}
+	port&=0x03;
+
+	if (3==port) 	printf("--- 8255 control port read.\n")
+	else					printf("--- 8255 port %c read.\n",'A'+port);
 
 	return 0x00;
 }
 
-static void p_8255_out(BYTE port, BYTE data) {
-	switch(port&0x03) {
-    case 0:
-      printf("--- 8255 port A written: %02x\n",data);
-    	break;
-		case 1:
-      printf("--- 8255 port B written: %02x\n",data);
-    	break;
-		case 2:
-      printf("--- 8255 port C written: %02x\n",data);
-    	break;
-		case 3:
-      printf("--- 8255 control port written: %02x\n",data);
-    	break;
-		default:
-      printf("--- 8255 port %d makes no sense!\n",port);
-  }
+static void p_8255_out(BYTE port,BYTE data) {
+	port&=0x03;
+
+	if (3==port)	printf("--- 8255 control port written: %02x\n",data);
+	else					printf("--- 8255 port %c written: %02x\n",'A'+port,data);
 }
 
 // reads the current value of the down counter on the specified channel
 static BYTE p_ctc_in(BYTE port) {
-	BYTE chan=(port&0x03);
-	printf("--- CTC chan %d read: 0x%02x.\n",chan,ctc[chan].c_val);
-	return ctc[chan].c_val;
+	port&=0x03;
+
+	printf("--- CTC chan %d read: 0x%02x.\n",port,ctc[port].c_val);
+	return ctc[port].c_val;
 }
 
-static void p_ctc_out(BYTE port, BYTE data) {
-	BYTE chan=(port&0x03);
+static void p_ctc_out(BYTE port,BYTE data) {
+	port&=0x03;
+
 	ctc_state *thisctc;
-	thisctc=&ctc[chan];
+	thisctc=&ctc[port];
 
 	if (thisctc->tc_next) { // if we indicated the next write would be the tc
 		thisctc->tc=data;
 		thisctc->tc_next=0;
 
-		printf("--- CTC chan %d TC set to 0x%02x.\n",chan,data);
+		printf("--- CTC chan %d TC set to 0x%02x.\n",port,data);
 		return;
 	}
 
@@ -165,7 +143,7 @@ static void p_ctc_out(BYTE port, BYTE data) {
 		thisctc->tc_next=(data&0x04)?1:0;
 		thisctc->prescaler=(data&0x20)?255:15;
 
-		printf("--- CTC chan %d config word set: 0x%02x. ",chan,data);
+		printf("--- CTC chan %d config word set: 0x%02x. ",port,data);
 
 		if (thisctc->ints_enabled) {
 			printf("(ints enabled)\n");
@@ -176,15 +154,15 @@ static void p_ctc_out(BYTE port, BYTE data) {
 		// there is only one interrupt vector register on the chip, since
 		// bits 2-1 contain the channel. TODO: emulate this.
 
-		thisctc->ivector=(data&0xf8)|(chan<<1);  
+		thisctc->ivector=(data&0xf8)|(port<<1);  
 			
-		printf("--- CTC chan %d ivector set: 0x%02x.\n",chan,data);
+		printf("--- CTC chan %d ivector set: 0x%02x.\n",port,data);
 	}
 }
 
 static BYTE p_dart_in(BYTE port) {
 	char chan='A';
-	chan+=(port&0x01); // 'B' if true
+	chan+=(port&0x01);
 
 	if (port&=0x02) printf("--- DART channel %c control read.\n",chan);
 	else						printf("--- DART channel %c data read.\n",chan);
