@@ -23,6 +23,13 @@
 #define ADDR_CTC	4
 #define ADDR_DART	8
 
+// TODOs: 
+//
+// - fix the interrupt handling stuff (again), to have a
+// queue with acks.
+// - see if i cant clean up some of the globals and pass
+// struct ptrs around.
+
 static ctc_state ctc[4];
 static dart_state dart[2]; // 0=chan A, 1=chan B
 
