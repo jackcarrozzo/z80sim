@@ -20,6 +20,13 @@ static BYTE p_dart_in(BYTE);
 static void p_dart_out(BYTE,BYTE);
 
 typedef struct {
+	BYTE port_a;
+	BYTE port_b;
+	BYTE port_c;
+	BYTE control;
+} 8255_state;
+
+typedef struct {
   BYTE ints_enabled;
   BYTE tc_next;
   BYTE tc;

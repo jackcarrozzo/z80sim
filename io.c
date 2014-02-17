@@ -30,11 +30,18 @@
 // - see if i cant clean up some of the globals and pass
 // struct ptrs around.
 
+static 8255_state pio; // called pio for var name compliance, but in my application
+											 // it is in fact an 82c55
 static ctc_state ctc[4];
 static dart_state dart[2]; // 0=chan A, 1=chan B
 
 void init_io(void) { // called at start to init all ports
 	int i;
+
+	pio.port_a=0;
+	pio.port_b=0;
+	pio.port_c=0;
+	pio.control=0x80; // TODO: look up state after reset
 
 	for (i=0;i<4;i++) {
 		ctc[i].ints_enabled=0;
@@ -111,9 +118,11 @@ static BYTE io_trap(BYTE adr) {
 		cpu_error = IOTRAP;
 		cpu_state = STOPPED;
 	}
+	
 	return((BYTE) 0);
 }
 
+// TODO: proper 82c55 emulation
 static BYTE p_8255_in(BYTE port) {
 	port&=0x03;
 
