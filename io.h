@@ -1,30 +1,12 @@
 // i've used BYTE to match the original code here, but 
 // unsigned char or uint8_t would work identically
 
-void init_io(void);
-void exit_io(void);
-
-void run_counters(void);
-
-BYTE io_in(BYTE);
-void io_out(BYTE,BYTE);
-static BYTE io_trap(BYTE);
-
-static BYTE p_8255_in(BYTE);
-static void p_8255_out(BYTE,BYTE);
-
-static BYTE p_ctc_in(BYTE);
-static void p_ctc_out(BYTE,BYTE);
-
-static BYTE p_dart_in(BYTE);
-static void p_dart_out(BYTE,BYTE);
-
 typedef struct {
 	BYTE port_a;
 	BYTE port_b;
 	BYTE port_c;
 	BYTE control;
-} 8255_state;
+} pio_state;
 
 typedef struct {
   BYTE ints_enabled;
@@ -51,7 +33,37 @@ typedef struct { // see note in io.c about compatibility
 
 	// runtime vars
 	BYTE tx_buf_empty;	// RR0 D2 
-	BYTE rx_char_avail;	// RR0 D0
+	BYTE rx_char_avail;	// RR0 D0 (actually 0-4 in our case: used internally for buf size)
 	BYTE all_sent;			// RR1 D0
 	BYTE rx_buf_overrun;// RR1 D5 (latched till reset)
+	
+	BYTE rx_buf[3]; 		// rx is buffered like in the chip itself (tx is sent immediatly)
+
+	// status pins 
+	// can be read and written via register, but currently
+	// are not automatically set from internal conditions. (TODO)
+	BYTE rts_;
+	BYTE dtr_;
+	BYTE cts_;
+	BYTE dcd_;
 } dart_state;
+
+void init_io(void);
+void exit_io(void);
+
+void run_counters(void);
+
+BYTE io_in(BYTE);
+void io_out(BYTE,BYTE);
+static BYTE io_trap(BYTE);
+
+static BYTE p_8255_in(BYTE);
+static void p_8255_out(BYTE,BYTE);
+
+static BYTE p_ctc_in(BYTE);
+static void p_ctc_out(BYTE,BYTE);
+
+static BYTE p_dart_in(BYTE);
+static void p_dart_out(BYTE,BYTE);
+static void dart_reset(dart_state *);
+
