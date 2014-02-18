@@ -1,11 +1,19 @@
 // i've used BYTE to match the original code here, but 
 // unsigned char or uint8_t would work identically
 
+// 82c55-specific (mode 0 only)
 typedef struct {
+	// last values latched here
 	BYTE port_a;
 	BYTE port_b;
 	BYTE port_c;
 	BYTE control;
+
+	// internal states
+	BYTE conf_port_a;
+	BYTE conf_port_b;
+	BYTE conf_port_c_lower;
+	BYTE conf_port_c_upper;
 } pio_state;
 
 typedef struct {

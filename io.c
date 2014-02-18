@@ -38,12 +38,12 @@ static dart_state dart[2]; // 0=chan A, 1=chan B
 void init_io(void) { // called at start to init all ports
 	int i;
 
-	pio.port_a=0;
-	pio.port_b=0;
-	pio.port_c=0;
-	pio.control=0x80; // TODO: look up state after reset
+	pio.port_a=0xff; // at reset, 8255 ports are in input mode with 
+	pio.port_b=0xff; // light pullups
+	pio.port_c=0xff;
+	pio.control=0x9B; 
 
-	for (i=0;i<4;i++) {
+	for (i=0;i<4;i++) { // TODO: lookup proper vals
 		ctc[i].ints_enabled=0;
 		ctc[i].tc_next=0;
 		ctc[i].tc=255;
@@ -122,21 +122,67 @@ static BYTE io_trap(BYTE adr) {
 	return((BYTE) 0);
 }
 
-// TODO: proper 82c55 emulation
 static BYTE p_8255_in(BYTE port) {
 	port&=0x03;
 
-	if (3==port) 	printf("--- 8255 control port read.\n");
-	else					printf("--- 8255 port %c read.\n",'A'+port);
+	if (0x03==port) {
+		printf("--- 8255 control port read (0x%02x)\n",pio.control);
+		return pio.control;
+	} else {
+		BYTE portname='A'+port;
 
-	return 0x00;
+		printf("--- 8255 port %c read ",portname);
+		switch (port) {
+			case 0: 
+				printf("(%c): 0x%02x\n",(pio.conf_port_a)?'i':'o',pio.port_a);
+				return pio.port_a;	
+			case 1: 
+        printf("(%c): 0x%02x\n",(pio.conf_port_b)?'i':'o',pio.port_b);
+        return pio.port_b;
+			case 2: 
+        printf("(upper:%c lower:%c): 0x%02x\n",
+					(pio.conf_port_c_upper)?'i':'o',(pio.conf_port_c_lower)?'i':'o',pio.port_c);
+        return pio.port_c;
+		}
+	}
+
+	return 0x00; // can never get here, but removes compiler warning
 }
 
 static void p_8255_out(BYTE port,BYTE data) {
 	port&=0x03;
 
-	if (3==port)	printf("--- 8255 control port written: %02x\n",data);
-	else					printf("--- 8255 port %c written: %02x\n",'A'+port,data);
+	if (0x03==port) { // control word
+		if (data&0x80) { // mode set
+			pio.control=data; // saved in case it's read
+
+			// port modes: 1 in, 0 out
+			pio.conf_port_c_lower	=data&0x01; // D0
+			data>>=1;
+			pio.conf_port_b				=data&0x01; // D1
+			data>>=2;
+			pio.conf_port_c_upper	=data&0x01; // D3
+			data>>=1;
+			pio.conf_port_a				=data&0x01; // D4
+
+			printf("--- PIO config set: A:%c B:%c C-upper:%c C-lower:%c\n",
+				(pio.conf_port_a)?'i':'o',(pio.conf_port_b)?'i':'o',
+				(pio.conf_port_c_upper)?'i':'o',(pio.conf_port_c_lower)?'i':'o');
+
+		} else { // bit set / reset
+			printf("--- PIO bit set/reset attempted, but not emulated!\n");
+		}
+	} else { // data
+		char portname='A'+port;
+		printf("--- 8255 port %c written: 0x%02x\n",portname,data);
+
+		switch (port) {
+			case 0: pio.port_a=data; break;
+			case 1: pio.port_b=data; break;
+			case 2: pio.port_c=data; break;
+			// no default required as its handled above
+		}
+	}
 }
 
 // reads the current value of the down counter on the specified channel
