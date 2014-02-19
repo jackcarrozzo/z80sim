@@ -165,9 +165,9 @@ static void p_8255_out(BYTE port,BYTE data) {
 			data>>=1;
 			pio.conf_port_a				=data&0x01; // D4
 
-			printf("--- PIO config set: A:%c B:%c C-upper:%c C-lower:%c\n",
+			printf("--- PIO config set: A:%c B:%c C-upper:%c C-lower:%c (0x%02x)\n",
 				(pio.conf_port_a)?'i':'o',(pio.conf_port_b)?'i':'o',
-				(pio.conf_port_c_upper)?'i':'o',(pio.conf_port_c_lower)?'i':'o');
+				(pio.conf_port_c_upper)?'i':'o',(pio.conf_port_c_lower)?'i':'o',pio.control);
 
 		} else { // bit set / reset
 			printf("--- PIO bit set/reset attempted, but not emulated!\n");
@@ -376,6 +376,7 @@ static void p_dart_out(BYTE port,BYTE data) {
 			thisdart->reg_ptr=0; // following read or write to any reg, ptr set back to WR0
 		} else { // this write is to WR0
 			thisdart->reg_ptr=data&0x07; // last 3 bits set the WR pointer
+			printf("%s reg pointer set to %d.\n",pre,thisdart->reg_ptr);
 
 			BYTE cmd=(data&0x38)>>3;
 			// if cmd is 'channel reset', do it:
