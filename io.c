@@ -380,9 +380,10 @@ static void p_dart_out(BYTE port,BYTE data) {
 
 			BYTE cmd=(data&0x38)>>3;
 			// if cmd is 'channel reset', do it:
-			if (3==cmd) dart_reset(thisdart); 
-			// otherwise if it's not the 'Null' cmd, complain:
-			else if (cmd) 
+			if (3==cmd) {
+				printf("%s Channel reset.\n",pre);
+				dart_reset(thisdart); 
+			}	else if (cmd) // otherwise if it's not the 'Null' cmd, complain:
 				printf("%s Unimplemented CMD bits written to WR0: 0x%02x\n",pre,data);
 
 			if (data&0xc0) printf("%s CRC reset requested, but unimplemented.\n",pre);
