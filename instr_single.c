@@ -447,7 +447,7 @@ void cpu(void)
 			case INT_NMI: // NMIs	
 				int_type = INT_NONE; // ack the interrupt
 
-				IFF <<= 1;									// TODO: is this the right behavior?
+				IFF <<= 1;
 
 				// this block stores the current execution address on the stack
 #ifdef WANT_SPC
@@ -469,7 +469,6 @@ void cpu(void)
 				break;
 			case INT_INT:	// maskable ints
 				if (3!=IFF) break; 
-				//IFF = 0; // why did the interrupt flags get reset here?
 	
 				switch (int_mode) {
 				case 0: // TODO
@@ -498,7 +497,6 @@ void cpu(void)
 					int_vect=(I<<8)+int_lsb; // address of the vector table entry
 
 					// push current PC onto stack
-					// TODO: this doesnt bounds check like the others yet
 					*--STACK = (PC - ram) >> 8;
 					*--STACK = (PC - ram);
 
@@ -506,7 +504,7 @@ void cpu(void)
 					PC = ram + *(ram + int_vect); 			// LSB of the entry address
 					PC += (*(ram + int_vect + 1)) << 8;	// MSB
 					
-					if (INT_DEBUG) // TODO: mvoe this mode into a cli-configurable var
+					if (INT_DEBUG) // TODO: move this mode into a cli-configurable var
 						printf("--- Mode 2 Int: Lookup from 0x%04x, points to 0x%04lx.\n",int_vect,PC-ram);
 
 					int_type = INT_NONE; // ack the interrupt
