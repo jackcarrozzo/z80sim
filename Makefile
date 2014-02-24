@@ -1,21 +1,6 @@
-CC = gcc
+CC = clang  
 
-# Platform independend compiler optimization
 CFLAGS = -O3 -c -Wall
-
-# Intel Pentium M (Centrino) and gcc 4.1.1
-#CFLAGS = -O3 -march=i686 -minline-all-stringops -funroll-loops -c -Wall
-
-# AMD Opteron and gcc 3.3.5
-#CFLAGS = -O3 -mcpu=i686 -minline-all-stringops -c -Wall
-
-# TODO: clang stuff vs real gcc (osx)
-
-# Linux, BSD
-#LFLAGS = -s # generates depreciated warning on OSX
-
-# Solaris 9
-#LFLAGS = -s -lrt
 
 OBJ =	main.o \
 	instr_single.o \
