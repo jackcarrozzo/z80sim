@@ -1,38 +1,12 @@
 /*
- * Z80SIM  -  a	Z80-CPU	simulator
- *
- * Copyright (C) 1987-2008 by Udo Munk
- * 2014 fork by Jack Carrozzo <jack@crepinc.com>
- *
- * History:
- * 28-SEP-87 Development on TARGON/35 with AT&T Unix System V.3
- * 11-JAN-89 Release 1.1
- * 08-FEB-89 Release 1.2
- * 13-MAR-89 Release 1.3
- * 09-FEB-90 Release 1.4  Ported to TARGON/31 M10/30
- * 20-DEC-90 Release 1.5  Ported to COHERENT 3.0
- * 10-JUN-92 Release 1.6  long casting problem solved with COHERENT 3.2
- *			  and some optimization
- * 25-JUN-92 Release 1.7  comments in english and ported to COHERENT 4.0
- * 02-OCT-06 Release 1.8  modified to compile on modern POSIX OS's
- * 18-NOV-06 Release 1.9  modified to work with CP/M sources
- * 08-DEC-06 Release 1.10 modified MMU for working with CP/NET
- * 17-DEC-06 Release 1.11 TCP/IP sockets for CP/NET
- * 25-DEC-06 Release 1.12 CPU speed option
- * 19-FEB-07 Release 1.13 various improvements
- * 06-OCT-07 Release 1.14 bug fixes and improvements
- * 06-AUG-08 Release 1.15 many improvements and Windows support via Cygwin
- * 25-AUG-08 Release 1.16 console status I/O loop detection and line discipline
- * 20-OCT-08 Release 1.17 frontpanel integrated and Altair/IMSAI emulations
- */
-
-/*
  *	This modul contains the 'main()' function of the simulator,
  *	where the options are checked and variables are initialized.
  *	After initialization of the UNIX interrupts ( int_on() )
  *	and initialization of the I/O simulation ( init_io() )
  *	the user interface ( mon() ) is called.
  */
+
+// changed: help, added getopt, fixed file loading. -jc
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -41,6 +15,8 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <memory.h>
+#include <getopt.h>
+
 #include "config.h"
 #include "global.h"
 
@@ -53,8 +29,25 @@ extern void int_on(void), int_off(void), mon(void);
 extern void init_io(void), exit_io(void);
 extern int exatoi(char *);
 
-int main(int argc, char *argv[])
-{
+void help(char *name) {
+#ifndef Z80_UNDOC
+	printf("usage:\t%s -s -l -i -mn -fn -xfilename\n",name);
+#else
+	printf("usage:\t%s -s -l -i -z -mn -fn -xfilename\n",name);
+#endif
+	puts("\ts = save core and cpu on exit");
+	puts("\tl = load core and cpu on start");
+	puts("\ti = trap on I/O to unused ports");
+#ifdef Z80_UNDOC
+	puts("\tz = trap on undocumented Z80 ops");
+#endif
+	puts("\tm = init memory with n");
+	puts("\tf = CPU frequenzy n in MHz");
+	puts("\tx = load and execute filename");
+	exit(1);
+}
+
+int main(int argc, char **argv) {
 	register char *s, *p;
 	register char *pn = argv[0];
 
@@ -63,61 +56,65 @@ int main(int argc, char *argv[])
 	tmax = CPU_SPEED * 10000;
 #endif
 
-	while (--argc >	0 && (*++argv)[0] == '-')
-		for (s = argv[0] + 1; *s != '\0'; s++)
-			switch (*s) {
-			case 's':	/* save core and CPU on exit */
-				s_flag = 1;
+	const struct option long_opts[] = {
+		{"help", no_argument, NULL, 'h'},
+		{"savecore", required_argument, NULL, 's'}, 
+		{"loadcore", required_argument, NULL, 'l'},
+		{"trapio", no_argument, NULL, 'i'},
+#ifdef Z80_UNDOC
+		{"trapundoc", no_argument, NULL, 'z'},
+#endif
+		{"initmem", required_argument, NULL, 'm'},
+		{"cpufreq", required_argument, NULL, 'f'},
+		{"run", required_argument, NULL, 'x'},
+		{NULL,0,NULL,0}
+	};
+
+	const char *short_opts = "hs:l:izm:f:x:";
+	int option_index=0;
+	int c;
+
+	while ((c=getopt_long(argc,argv,short_opts,long_opts,&option_index))!=-1) {
+		switch (c) {
+			case 'h':
+				help(pn);
+			case 's':
+				printf("Save core set.\n");
+				s_flag=1;
 				break;
-			case 'l':	/* load core and CPU from file */
-				l_flag = 1;
+			case 'l':
+				printf("load core set.\n");
+				l_flag=1;
+				break;
+			case 'i':
+				printf("trap io.\n");
 				break;
 #ifdef Z80_UNDOC
-			case 'z':	/* trap undocumented Z80 ops */
-				z_flag = 1;
+			case 'z':
+				printf("trap undoc.\n");
+				z_flag=1;
 				break;
 #endif
-			case 'i':	/* trap I/O on unused ports */
-				i_flag = 1;
+			case 'm':
+				m_flag=exatoi(optarg);
 				break;
-			case 'm':	/* initialize Z80 memory */
-				m_flag = exatoi(s+1);
-				s += strlen(s+1);
+			case 'f':
+				f_flag=atoi(optarg);
+				tmax=f_flag*10000;
 				break;
-			case 'f':	/* set emulation speed */
-				f_flag = atoi(s+1);
-				s += strlen(s+1);
-				tmax = f_flag * 10000;
-				break;
-			case 'x':	/* get filename with Z80 executable */
-				x_flag = 1;
-				s++;
-				p = xfn;
-				while (*s)
-					*p++ = *s++;
-				*p = '\0';
-				s--;
+			case 'x':
+				x_flag=1;
+				p=xfn;
+				s=&optarg[0];
+				while (*s) *p++=*s++;
+				*p='\0';
 				break;
 			case '?':
-				goto usage;
+				help(pn);
 			default:
-				printf("illegal option %c\n", *s);
-#ifndef Z80_UNDOC
-usage:				printf("usage:\t%s -s -l -i -mn -fn -xfilename\n", pn);
-#else
-usage:				printf("usage:\t%s -s -l -i -z -mn -fn -xfilename\n", pn);
-#endif
-				puts("\ts = save core and cpu");
-				puts("\tl = load core and cpu");
-				puts("\ti = trap on I/O to unused ports");
-#ifdef Z80_UNDOC
-				puts("\tz = trap on undocumented Z80 ops");
-#endif
-				puts("\tm = init memory with n");
-				puts("\tf = CPU frequenzy n in MHz");
-				puts("\tx = load and execute filename");
-				exit(1);
-			}
+				help(pn);
+		}
+	}
 
 	putchar('\n');
 	puts("#######  #####    ###            #####    ###   #     #");
@@ -127,33 +124,31 @@ usage:				printf("usage:\t%s -s -l -i -z -mn -fn -xfilename\n", pn);
 	puts("  #     #     # #     #               #    #    #     #");
 	puts(" #      #     #  #   #          #     #    #    #     #");
 	puts("#######  #####    ###            #####    ###   #     #");
-	printf("\nRelease %s, %s\n", RELEASE, COPYR);
-	#ifdef USR_COM
-  printf("%s %s, %s\n", USR_REL, USR_CPR, USR_COM);
+	printf("\nRelease %s, %s\n",RELEASE,COPYR);
+#ifdef USR_COM
+	printf("%s %s,%s\n",USR_REL,USR_CPR,USR_COM);
 #endif
 
-	if (f_flag > 0)
-		printf("\nCPU speed is %d MHz\n", f_flag);
+if (f_flag > 0)
+	printf("\nCPU speed is %d MHz\n", f_flag);
 	else
-		printf("\nCPU speed is unlimited\n");
-	
+	printf("\nCPU speed is unlimited\n");
+
 	fflush(stdout);
 
 	wrk_ram	= PC = ram;
 	STACK = ram + 0xffff;
 	memset((char *)	ram, m_flag, 65536);
-	if (l_flag)
-		if (load_core())
-			return(1);
+if (l_flag)
+	if (load_core()) return(1);
 	int_on();
 	init_io();
 	mon();
-	if (s_flag)
-		save_core();
+	if (s_flag) save_core();
 	exit_io();
 	int_off();
 	return(0);
-}
+	}
 
 /*
  *	This function saves the CPU and the memory into the file core.z80
@@ -318,15 +313,15 @@ static int load_mos(int fd, char *fn)
  */
 static int load_bin(char *fn)
 {
-  FILE *fd;
-  int addr = 0;
-  int saddr = 0;
-  int eaddr = 0;
+	FILE *fd;
+	int addr = 0;
+	int saddr = 0;
+	int eaddr = 0;
 
-  if ((fd = fopen(fn, "rb")) == NULL) {
-    printf("can't open file %s\n", fn);
-    return(1);
-  }
+	if ((fd = fopen(fn, "rb")) == NULL) {
+		printf("can't open file %s\n", fn);
+		return(1);
+	}
 
 	fseek(fd, 0, SEEK_END);
 	unsigned long flen=ftell(fd);
@@ -335,14 +330,14 @@ static int load_bin(char *fn)
 	fread(ram+addr,flen,1,fd);
 	eaddr=addr+flen;
 
-  fclose(fd);
-  printf("\nLoader statistics for file %s:\n", fn);
-  printf("START : 0x%04x\n", saddr);
-  printf("END   : 0x%04x\n", eaddr);
-  printf("LOADED: 0x%04x (%d)\n\n", eaddr - saddr + 1, eaddr - saddr + 1);
-  PC = wrk_ram = ram + saddr;
+	fclose(fd);
+	printf("\nLoader statistics for file %s:\n", fn);
+	printf("START : 0x%04x\n", saddr);
+	printf("END   : 0x%04x\n", eaddr);
+	printf("LOADED: 0x%04x (%d)\n\n", eaddr - saddr + 1, eaddr - saddr + 1);
+	PC = wrk_ram = ram + saddr;
 
-  return(0);
+	return(0);
 }
 
 /*
@@ -377,25 +372,25 @@ static int load_hex(char *fn)
 		}
 		s++;
 		count = (*s <= '9') ? (*s - '0') << 4 :
-				      (*s - 'A' + 10) << 4;
+			(*s - 'A' + 10) << 4;
 		s++;
 		count += (*s <= '9') ? (*s - '0') :
-				       (*s - 'A' + 10);
+			(*s - 'A' + 10);
 		s++;
 		if (count == 0)
 			break;
 		addr = (*s <= '9') ? (*s - '0') << 4 :
-				     (*s - 'A' + 10) << 4;
+			(*s - 'A' + 10) << 4;
 		s++;
 		addr += (*s <= '9') ? (*s - '0') :
-				      (*s - 'A' + 10);
+			(*s - 'A' + 10);
 		s++;
 		addr *= 256;
 		addr += (*s <= '9') ? (*s - '0') << 4 :
-				      (*s - 'A' + 10) << 4;
+			(*s - 'A' + 10) << 4;
 		s++;
 		addr += (*s <= '9') ? (*s - '0') :
-				      (*s - 'A' + 10);
+			(*s - 'A' + 10);
 		s++;
 		if (addr < saddr)
 			saddr = addr;
@@ -403,10 +398,10 @@ static int load_hex(char *fn)
 		s += 2;
 		for (i = 0; i < count; i++) {
 			data = (*s <= '9') ? (*s - '0') << 4 :
-					     (*s - 'A' + 10) << 4;
+				(*s - 'A' + 10) << 4;
 			s++;
 			data += (*s <= '9') ? (*s - '0') :
-					      (*s - 'A' + 10);
+				(*s - 'A' + 10);
 			s++;
 			*(ram + addr + i) = data;
 		}
