@@ -44,7 +44,9 @@
 /*#define FRONTPANEL*/	/* no frontpanel emulation */
 /*#define BUS_8080*/	/* no emulation of 8080 bus status */
 #define WANT_COUNTERS // enable counter management
-#define INT_DEBUG 1 // prints when an interrupt fires
+#define INT_DEBUG 0 // prints when an interrupt fires
+
+#define DART_BUFSIZE 16
 
 /*
  *	The following defines may be modified and activated by

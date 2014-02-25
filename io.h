@@ -45,7 +45,18 @@ typedef struct { // see note in io.c about compatibility
 	BYTE all_sent;			// RR1 D0
 	BYTE rx_buf_overrun;// RR1 D5 (latched till reset)
 	
-	BYTE rx_buf[3]; 		// rx is buffered like in the chip itself (tx is sent immediatly)
+	// socket things (TODO: max cleanup)
+	struct sockaddr_in ouraddr;
+	struct sockaddr_in remaddr;
+	socklen_t addrlen;
+	int recvlen;
+	int sock;
+	int have_client;
+
+	// received data is read into rx_buf, then copied into rx_fifo for a number of reasons 
+	BYTE rx_buf[DART_BUFSIZE]; 	// the intermediate
+	BYTE rx_fifo[DART_BUFSIZE];	// the circular ring buf
+	int cbhead,cbtail,cbused;		// ring buffer management
 
 	// status pins 
 	// can be read and written via register, but currently
