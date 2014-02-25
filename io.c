@@ -39,15 +39,6 @@
 // listen ports for serial sockets
 #define DARTA_PORT 8041 
 #define DARTB_PORT 8042
-#define SOCKBUF    16 // TODO: explain small val
-
-/*struct sockaddr_in ouraddr;
-struct sockaddr_in remaddr;
-socklen_t addrlen = sizeof(remaddr);
-int recvlen;
-int sock;
-unsigned char buf[SOCKBUF];
-int have_client=0;*/
 
 // TODOs: 
 //
