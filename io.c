@@ -72,29 +72,30 @@ void init_io(void) { // called at start to init all ports
 
 	for (i=0;i<2;i++) {
 		dart_reset(&dart[i]);
+
+		if (0>(dart[i].sock=socket(AF_INET,SOCK_DGRAM,0))) {
+	    perror("cannot create socket\n");
+	    exit(1);   
+	  }	
+
+		bzero((char *)&dart[i].ouraddr,sizeof(dart[i].ouraddr));
+		dart[i].ouraddr.sin_family=AF_INET;
+		dart[i].ouraddr.sin_addr.s_addr=htonl(INADDR_ANY);
+		dart[i].ouraddr.sin_port=htons((0==i)?DARTA_PORT:DARTB_PORT);
+	
+		dart[i].have_client=0;
+		dart[i].addrlen=sizeof(dart[i].remaddr);
+
+		if (0>(bind(dart[i].sock,(struct sockaddr *)&dart[i].ouraddr,sizeof(dart[i].ouraddr)))) {
+			perror("bind failed");
+			exit(1);
+		} else printf("Dart %d: socket bound successfully.\n",i);
 	}
-
-	if (0>(dart[0].sock=socket(AF_INET,SOCK_DGRAM,0))) {
-    perror("cannot create socket\n");
-    exit(1);   
-  }	
-
-	bzero((char *)&dart[0].ouraddr,sizeof(dart[0].ouraddr));
-	dart[0].ouraddr.sin_family=AF_INET;
-	dart[0].ouraddr.sin_addr.s_addr=htonl(INADDR_ANY);
-	dart[0].ouraddr.sin_port=htons(DARTA_PORT);
-
-	dart[0].have_client=0;
-	dart[0].addrlen=sizeof(dart[0].remaddr);
-
-	if (0>(bind(dart[0].sock,(struct sockaddr *)&dart[0].ouraddr,sizeof(dart[0].ouraddr)))) {
-		perror("bind failed");
-		exit(1);
-	} else printf("Socket bound successfully.\n");
 }
 
 void exit_io(void) { // called at exit
 	close(dart[0].sock);
+	close(dart[1].sock);
 }
 
 // this is written to emulate CTC funtionality if run once per clock - 

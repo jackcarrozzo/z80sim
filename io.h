@@ -45,7 +45,7 @@ typedef struct { // see note in io.c about compatibility
 	BYTE all_sent;			// RR1 D0
 	BYTE rx_buf_overrun;// RR1 D5 (latched till reset)
 	
-	// socket things (TODO: max cleanup)
+	// socket things
 	struct sockaddr_in ouraddr;
 	struct sockaddr_in remaddr;
 	socklen_t addrlen;
