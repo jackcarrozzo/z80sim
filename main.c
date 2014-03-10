@@ -79,19 +79,15 @@ int main(int argc, char **argv) {
 			case 'h':
 				help(pn);
 			case 's':
-				printf("Save core set.\n");
 				s_flag=1;
 				break;
 			case 'l':
-				printf("load core set.\n");
 				l_flag=1;
 				break;
 			case 'i':
-				printf("trap io.\n");
 				break;
 #ifdef Z80_UNDOC
 			case 'z':
-				printf("trap undoc.\n");
 				z_flag=1;
 				break;
 #endif
@@ -124,9 +120,9 @@ int main(int argc, char **argv) {
 	puts("  #     #     # #     #               #    #    #     #");
 	puts(" #      #     #  #   #          #     #    #    #     #");
 	puts("#######  #####    ###            #####    ###   #     #");
-	printf("\nRelease %s, %s\n",RELEASE,COPYR);
+	printf("\nRelease %s,%s\n",RELEASE,COPYR);
 #ifdef USR_COM
-	printf("%s %s,%s\n",USR_REL,USR_CPR,USR_COM);
+	printf("%s %s\n",USR_REL,USR_COM);
 #endif
 
 if (f_flag > 0)
