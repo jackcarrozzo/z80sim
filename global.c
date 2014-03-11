@@ -33,6 +33,7 @@
 
 #define MAXCHAN	5	/* max number of channel for I/O busy detect */
 
+
 /*
  *	CPU Registers
  */

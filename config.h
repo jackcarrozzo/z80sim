@@ -55,7 +55,7 @@
  */
 
 #define	USR_COM	"Jack Carrozzo <jack@crepinc.com>"
-#define	USR_REL	"Fixes and update, "
+#define	USR_REL	"Fixes and updates:"
 #define	USR_CPR	"Copyright (C) 2014"
 
 

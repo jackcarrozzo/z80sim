@@ -1,3 +1,10 @@
+typedef struct {
+  char pio;
+  char ctc;
+  char dart;
+  char other;
+} t_iodebug;
+
 // i've used BYTE to match the original code here, but 
 // unsigned char or uint8_t would work identically
 

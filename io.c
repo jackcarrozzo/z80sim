@@ -24,10 +24,21 @@
 #include "global.h"
 #include "io.h"
 
-// TODO: cli configurable debug managment
-#define DEBUG_PIO  1
-#define DEBUG_CTC  0
-#define DEBUG_DART 0
+// default debugging thresholds
+#define DEBUG_PIO   5
+#define DEBUG_CTC   5
+#define DEBUG_DART  5
+#define DEBUG_OTHER 3
+static t_iodebug iodebug;
+// levels messages can have:
+#define D_CONFW  3
+#define D_CONFR  3
+#define D_RWOPS  4
+#define D_ERR		 2
+#define D_UNIMPL 3
+#define D_INFO	 4
+#define D_ALL    5
+#define D_WARN   3
 
 // base addresses for io devices (assumes that A1-0 are 
 // used in the devices themselves, and A4-2 are demuxed
@@ -54,6 +65,11 @@ static dart_state dart[2]; // 0=chan A, 1=chan B
 
 void init_io(void) { // called at start to init all ports
 	int i;
+
+	iodebug.pio 	=DEBUG_PIO;
+	iodebug.ctc 	=DEBUG_CTC;
+	iodebug.dart	=DEBUG_DART;
+	iodebug.other	=DEBUG_OTHER;
 
 	pio.port_a=0xff; // at reset, 8255 ports are in input mode with 
 	pio.port_b=0xff; // light pullups
@@ -89,11 +105,12 @@ void init_io(void) { // called at start to init all ports
 		if (0>(bind(dart[i].sock,(struct sockaddr *)&dart[i].ouraddr,sizeof(dart[i].ouraddr)))) {
 			perror("bind failed");
 			exit(1);
-		} else printf("Dart %d: socket bound successfully.\n",i);
+		} else if (iodebug.dart>4) printf("Dart %c: socket bound successfully.\n",'A'+i);
 	}
 }
 
 void exit_io(void) { // called at exit
+	if (iodebug.dart>4) printf("DART: closing UDP sockets.\n");
 	close(dart[0].sock);
 	close(dart[1].sock);
 }
@@ -149,7 +166,7 @@ void io_out(BYTE adr, BYTE data) {
 
 // trap unused ports
 static BYTE io_trap(BYTE adr) {
-	printf("--- No device at port %d! Trapping...\n",adr);
+	if (iodebug.other>=D_ERR) printf("--- No device at port %d! Trapping...\n",adr);
 	
 	if (i_flag) {
 		cpu_error = IOTRAP;
@@ -163,21 +180,21 @@ static BYTE p_8255_in(BYTE port) {
 	port&=0x03;
 
 	if (0x03==port) {
-		if (DEBUG_PIO) printf("--- 8255 control port read (0x%02x)\n",pio.control);
+		if (iodebug.pio>=D_CONFR) printf("--- 8255 control port read (0x%02x)\n",pio.control);
 		return pio.control;
 	} else {
 		BYTE portname='A'+port;
 
-		if (DEBUG_PIO) printf("--- 8255 port %c read ",portname);
+		if (iodebug.pio>=D_RWOPS) printf("--- 8255 port %c read ",portname);
 		switch (port) {
 			case 0: 
-				if (DEBUG_PIO) printf("(%c): 0x%02x\n",(pio.conf_port_a)?'i':'o',pio.port_a);
+				if (iodebug.pio>=D_INFO) printf("(%c): 0x%02x\n",(pio.conf_port_a)?'i':'o',pio.port_a);
 				return pio.port_a;	
 			case 1: 
-        if (DEBUG_PIO) printf("(%c): 0x%02x\n",(pio.conf_port_b)?'i':'o',pio.port_b);
+        if (iodebug.pio>=D_INFO) printf("(%c): 0x%02x\n",(pio.conf_port_b)?'i':'o',pio.port_b);
         return pio.port_b;
 			case 2: 
-        if (DEBUG_PIO) printf("(upper:%c lower:%c): 0x%02x\n",
+        if (iodebug.pio>=D_INFO) printf("(upper:%c lower:%c): 0x%02x\n",
 					(pio.conf_port_c_upper)?'i':'o',(pio.conf_port_c_lower)?'i':'o',pio.port_c);
         return pio.port_c;
 		}
@@ -202,16 +219,16 @@ static void p_8255_out(BYTE port,BYTE data) {
 			data>>=1;
 			pio.conf_port_a				=data&0x01; // D4
 
-			if (DEBUG_PIO) printf("--- PIO config set: A:%c B:%c C-upper:%c C-lower:%c (0x%02x)\n",
-				(pio.conf_port_a)?'i':'o',(pio.conf_port_b)?'i':'o',
-				(pio.conf_port_c_upper)?'i':'o',(pio.conf_port_c_lower)?'i':'o',pio.control);
-
+			if (iodebug.pio>=D_CONFW) 
+				printf("--- PIO config set: A:%c B:%c C-upper:%c C-lower:%c (0x%02x)\n",
+					(pio.conf_port_a)?'i':'o',(pio.conf_port_b)?'i':'o',
+					(pio.conf_port_c_upper)?'i':'o',(pio.conf_port_c_lower)?'i':'o',pio.control);
 		} else { // bit set / reset
-			printf("--- PIO bit set/reset attempted, but not emulated!\n");
+			if (iodebug.pio>=D_ERR) printf("--- PIO bit set/reset attempted, but not emulated!\n");
 		}
 	} else { // data
 		char portname='A'+port;
-		if (DEBUG_PIO) printf("--- 8255 port %c written: 0x%02x\n",portname,data);
+		if (iodebug.pio>=D_RWOPS) printf("--- 8255 port %c written: 0x%02x\n",portname,data);
 
 		switch (port) {
 			case 0: pio.port_a=data; break;
@@ -226,7 +243,7 @@ static void p_8255_out(BYTE port,BYTE data) {
 static BYTE p_ctc_in(BYTE port) {
 	port&=0x03;
 
-	if (DEBUG_CTC) printf("--- CTC chan %d read: 0x%02x.\n",port,ctc[port].c_val);
+	if (iodebug.ctc>=D_RWOPS) printf("--- CTC chan %d read: 0x%02x.\n",port,ctc[port].c_val);
 	return ctc[port].c_val;
 }
 
@@ -239,7 +256,7 @@ static void p_ctc_out(BYTE port,BYTE data) {
 		thisctc->tc=data;
 		thisctc->tc_next=0;
 
-		if (DEBUG_CTC) printf("--- CTC chan %d TC set to 0x%02x.\n",port,data);
+		if (iodebug.ctc>=D_CONFW) printf("--- CTC chan %d TC set to 0x%02x.\n",port,data);
 		return;
 	}
 
@@ -248,12 +265,12 @@ static void p_ctc_out(BYTE port,BYTE data) {
 		thisctc->tc_next=(data&0x04)?1:0;
 		thisctc->prescaler=(data&0x20)?255:15;
 
-		if (DEBUG_CTC) printf("--- CTC chan %d config word set: 0x%02x. ",port,data);
+		if (iodebug.ctc>=D_CONFW) printf("--- CTC chan %d config word set: 0x%02x. ",port,data);
 
 		if (thisctc->ints_enabled) {
-			if (DEBUG_CTC) printf("(ints enabled)\n");
+			if (iodebug.ctc>=D_CONFW) printf("(ints enabled)\n");
 		} else {
-			if (DEBUG_CTC) printf("(ints disabled)\n");
+			if (iodebug.ctc>=D_CONFW) printf("(ints disabled)\n");
 		}
 	} else { // vector word
 		// there is only one interrupt vector register on the chip, since
@@ -261,7 +278,7 @@ static void p_ctc_out(BYTE port,BYTE data) {
 
 		thisctc->ivector=(data&0xf8)|(port<<1);  
 			
-		if (DEBUG_CTC) printf("--- CTC chan %d ivector set: 0x%02x.\n",port,data);
+		if (iodebug.ctc>=D_CONFW) printf("--- CTC chan %d ivector set: 0x%02x.\n",port,data);
 	}
 }
 
@@ -280,7 +297,7 @@ static BYTE p_dart_in(BYTE port) {
 	char chan='A'+(port&0x01);
   char pre[17]; // preamble of our status lines
   sprintf(pre,"--- DART chan %c:",chan);
-
+	
 	BYTE resp=0x00;
 
 	dart_state *thisdart=&dart[port&0x01];
@@ -292,9 +309,9 @@ static BYTE p_dart_in(BYTE port) {
 				thisdart->recvlen=recvfrom(thisdart->sock,thisdart->rx_buf,DART_BUFSIZE,MSG_DONTWAIT,
 					(struct sockaddr *)&(thisdart->remaddr),&(thisdart->addrlen));
 
-				//printf("!-- sock read, %d bytes returned from %s.\n",recvlen,
-				//	inet_ntoa(remaddr.sin_addr));
-				
+				if (iodebug.dart>=D_ALL) printf("!-- sock read, %d bytes returned from %s.\n",
+					thisdart->recvlen,inet_ntoa(thisdart->remaddr.sin_addr));
+
 				if ((thisdart->recvlen>0)&&(!thisdart->have_client)) thisdart->have_client++;
 				
 				int i;
@@ -329,8 +346,8 @@ static BYTE p_dart_in(BYTE port) {
 				resp|=thisdart->all_sent; // D0: all sent
 				break;
 			default:
-				printf("%s RR%d requested, but nonexistant.\n",pre,thisdart->reg_ptr);
-		}
+				if (iodebug.dart>=D_ERR) printf("%s RR%d requested, but nonexistant.\n",pre,thisdart->reg_ptr);
+	}
 
 		thisdart->reg_ptr=0; // back to 0 after any read or write	
 		return resp;	
@@ -340,7 +357,10 @@ static BYTE p_dart_in(BYTE port) {
 			if (thisdart->cbhead>DART_BUFSIZE) thisdart->cbhead-=DART_BUFSIZE;
 			thisdart->cbused--;
 			return resp;
-		} else printf("read from empty buf!\n");
+		} else {
+			if (iodebug.dart>=D_ERR) printf("--! DART: read from empty buf!\n");
+		}
+
 		return 0x00;
 
 		/*if (thisdart->rx_char_avail) {
@@ -360,23 +380,20 @@ static void p_dart_out(BYTE port,BYTE data) {
 	char chan='A'+(port&0x01);
   char pre[17]; // preamble of our status lines
   sprintf(pre,"--- DART chan %c:",chan);
-
+	
 	dart_state *thisdart=&dart[port&0x01];
 
 	// TODO: split this up and make it easier to read
 
 	if (port&0x02) { // control word
-		char pre[17]; // preamble of our status lines
-		sprintf(pre,"--- DART chan %c:",chan);
-
 		if (thisdart->reg_ptr) { // write is to a config reg (WR1-7)
 			switch (thisdart->reg_ptr) { 
 				case 1: // WR1: interrupt config
 					if (data) { // nonzero interrupt flags set (unimplemented)
-						if (DEBUG_DART) 
-							printf("%s WR1 (ints) written (0x%02x), but unimplemented.\n",pre,data);
+						if (iodebug.dart>=D_UNIMPL) printf("%s WR1 (ints) written (0x%02x), but unimplemented.\n",
+							pre,data);
 					} else {
-						if (DEBUG_DART) printf("%s WR1 (ints) set zero.\n",pre);
+						if (iodebug.dart>=D_CONFW) printf("%s WR1 (ints) set zero.\n",pre);
 					}
 
 					thisdart->interrupt_mode=data;
@@ -384,24 +401,24 @@ static void p_dart_out(BYTE port,BYTE data) {
 
 				case 2: // WR2: interrupt vector
 					if ('A'==chan) {
-						if (DEBUG_DART) 
-							printf("%s WR2 (int vector) written, but only in B. (0x%02x)\n",pre,data);
+						if (iodebug.dart>=D_ERR) 
+							printf("%s WR2 (int vector) written, but exists only in B. (0x%02x)\n",pre,data);
 					} else {
-						if (DEBUG_DART) 
+						if (iodebug.dart>=D_UNIMPL) 
 							printf("%s WR2 (int vector) written, but unimplemented. (0x%02x)\n",pre,data);
 					}
 					break;
 
 				case 3: // WR3: rx config
 					if (0xc0!=(data&0xc0)) {
-						if (DEBUG_DART) printf("%s WR3: RX bits set, but not 8! (0x%02x)\n",pre,data);
+						if (iodebug.dart>=D_UNIMPL) printf("%s WR3: RX bits set, but not 8! (0x%02x)\n",pre,data);
 					} else {
 						thisdart->rx_bits=8;
-						if (DEBUG_DART) printf("%s WR3: RX bits set to 8.\n",pre);
+						if (iodebug.dart>=D_CONFW) printf("%s WR3: RX bits set to 8.\n",pre);
 					}
 
 					if (data&0x3e) {
-						if (DEBUG_DART) 
+						if (iodebug.dart>=D_UNIMPL) 
 							printf("%s WR3: unimplemented conf requested! (0x%02x)\n",pre,data);
 					}
 					break;
@@ -409,17 +426,19 @@ static void p_dart_out(BYTE port,BYTE data) {
 				case 4: // WR4: prescaler, parity, stop bits
 					thisdart->parity=data&0x01;
 					
-					if (DEBUG_DART) {
-						if (thisdart->parity)	printf("%s WR4: parity requested, but unimplemented.\n",pre);
-						else printf("%s WR4: parity set to none.\n",pre);
+					if (thisdart->parity)	{
+						if (iodebug.dart>=D_UNIMPL) printf("%s WR4: parity requested, but unimplemented.\n",pre);
+					} else {
+						if (iodebug.dart>=D_CONFW) printf("%s WR4: parity set to none.\n",pre);
 					}
 
 					// D1 is odd/even parity, but not checking since we dont care
 
 					thisdart->stopbits=(data&0x0c)>>2;
-					if (DEBUG_DART) {	
-						if (1==thisdart->stopbits) printf("%s WR4: 1 stop bit selected.\n",pre);
-						else printf("%s WR4: stop bits val %d set, but unimplemented.\n",
+					if (1==thisdart->stopbits) {
+						if (iodebug.dart>=D_CONFW) printf("%s WR4: 1 stop bit selected.\n",pre);
+					} else {
+						if (iodebug.dart>=D_UNIMPL) printf("%s WR4: stop bits val %d set, but unimplemented.\n",
 							pre,thisdart->stopbits);
 					}
 
@@ -428,14 +447,14 @@ static void p_dart_out(BYTE port,BYTE data) {
 					thisdart->clk_prescale=(data&0xc0)>>6;
 					thisdart->clk_prescale=(thisdart->clk_prescale)?(0x10<<(thisdart->clk_prescale-1)):1;
 					
-					if (DEBUG_DART) 
+					if (iodebug.dart>=D_CONFW)
 						printf("%s WR4: clock prescale set to x%d.\n",pre,thisdart->clk_prescale);
 
 					break;
 
 				case 5: // WR5: tx config and status pins
 					if (data&0x01) {
-						if (DEBUG_DART) printf("%s WR5: Tx CRC enabled, but unimplemented.\n",pre);
+						if (iodebug.dart>=D_UNIMPL) printf("%s WR5: Tx CRC enabled, but unimplemented.\n",pre);
 					}
 
 					// normally in async mode, the RTS pin is only active (low) after all bits 
@@ -448,9 +467,11 @@ static void p_dart_out(BYTE port,BYTE data) {
 					// since we arent emulating at this low a level, support only 8 bits per char
 					thisdart->tx_bits=8;					
 
-					if (DEBUG_DART) {
-						if ((data&0x60)==0x60) printf("%s WR5: Tx bits/char set to 8.\n",pre);
-						else printf("%s WR5: Tx bits/char set to something other than 8! Using 8.\n",pre);
+					if ((data&0x60)==0x60) {
+						if (iodebug.dart>=D_CONFW) printf("%s WR5: Tx bits/char set to 8.\n",pre);
+					} else {
+						if (iodebug.dart>=D_UNIMPL) 
+							printf("%s WR5: Tx bits/char set to something other than 8! Using 8.\n",pre);
 					}
 
 					thisdart->dtr_=(data&0x80)?0:1; // active low
@@ -458,28 +479,33 @@ static void p_dart_out(BYTE port,BYTE data) {
 					break;
 
 				default: // WR6 and WR7 exist in the SIO series only
-					printf("%s WR%d written (0x%02x), but unimplemented.\n",pre,thisdart->reg_ptr,data);
+					if (iodebug.dart>=D_UNIMPL) 
+						printf("%s WR%d written (0x%02x), but unimplemented.\n",pre,thisdart->reg_ptr,data);
 			}
 
 			thisdart->reg_ptr=0; // following read or write to any reg, ptr set back to WR0
 		} else { // this write is to WR0
 			thisdart->reg_ptr=data&0x07; // last 3 bits set the WR pointer
-			if (DEBUG_DART) printf("%s reg pointer set to %d.\n",pre,thisdart->reg_ptr);
+			if (iodebug.dart>=D_INFO) printf("%s reg pointer set to %d.\n",pre,thisdart->reg_ptr);
 
 			BYTE cmd=(data&0x38)>>3;
 			// if cmd is 'channel reset', do it:
 			if (3==cmd) {
-				if (DEBUG_DART) printf("%s Channel reset.\n",pre);
+				if (iodebug.dart>=D_WARN) printf("%s Channel reset.\n",pre);
 				dart_reset(thisdart); 
-			}	else if (cmd) // otherwise if it's not the 'Null' cmd, complain:
-				if (DEBUG_DART) printf("%s Unimplemented CMD bits written to WR0: 0x%02x\n",pre,data);
+			}	else if (cmd) { // otherwise if it's not the 'Null' cmd, complain:
+				if (iodebug.dart>=D_UNIMPL) printf("%s Unimplemented CMD bits written to WR0: 0x%02x\n",
+					pre,data);
+			}
 
-			if (data&0xc0) printf("%s CRC reset requested, but unimplemented.\n",pre);
+			if (data&0xc0) {
+				if (iodebug.dart>=D_UNIMPL) printf("%s CRC reset requested, but unimplemented.\n",pre);
+			}
 		}
 	} else { // data word
 		// TODO: error if configuration is wack
 
-		if (DEBUG_DART) printf("%s write: 0x%02x.\n",pre,data);
+		if (iodebug.dart>=D_RWOPS) printf("%s write: 0x%02x.\n",pre,data);
 
 		if (thisdart->have_client) {
 	   	if (0>sendto(thisdart->sock,&data,1,0,(struct sockaddr *)&(thisdart->remaddr),
