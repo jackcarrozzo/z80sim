@@ -10,3 +10,7 @@ Changes so far:
 - Changed file names to be meaninful
 - Added support for loading flat binary memory files, and fixed filetype detection
 
+TODO:
+- Add flag to exit after halt
+- Add configurable debug prints for various emulated chips
+- Make CTC clock counting accurate
