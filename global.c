@@ -111,6 +111,7 @@ int f_flag;			/* flag for -f option */
 #ifdef Z80_UNDOC
 int z_flag;			/* flag for -z option */
 #endif
+int q_flag;			/* flag for -q option */
 char xfn[LENCMD];		/* buffer for filename (option -x) */
 BYTE cpu_state;			/* status of CPU emulation */
 int cpu_error;			/* error status of CPU emulation */

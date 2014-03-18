@@ -939,6 +939,9 @@ static void cpu_err_msg(void)
 	case OPHALT:
 		printf("HALT Op-Code reached at %04x\n",
 		       (unsigned int)(PC - ram - 1));
+
+		if (q_flag) exit(0);
+
 		break;
 	case IOTRAP:
 		printf("I/O Trap at %04x\n", (unsigned int)(PC - ram));

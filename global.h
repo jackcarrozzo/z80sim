@@ -42,7 +42,7 @@ extern BYTE	cpu_bus;
 
 extern BYTE	ram[],*wrk_ram, cpu_state;
 
-extern int	s_flag, l_flag, m_flag, x_flag, break_flag, i_flag, f_flag,
+extern int	s_flag, l_flag, m_flag, x_flag, break_flag, i_flag, f_flag, q_flag,
 		cpu_error, int_type, int_mode, int_lsb, int_vect, cntl_c, cntl_bs,
 		parrity[], sb_next;
 

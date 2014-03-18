@@ -31,9 +31,9 @@ extern int exatoi(char *);
 
 void help(char *name) {
 #ifndef Z80_UNDOC
-	printf("usage:\t%s -s -l -i -mn -fn -xfilename\n",name);
+	printf("usage:\t%s -s -l -i -mn -q -fn -xfilename\n",name);
 #else
-	printf("usage:\t%s -s -l -i -z -mn -fn -xfilename\n",name);
+	printf("usage:\t%s -s -l -i -z -mn -q -fn -xfilename\n",name);
 #endif
 	puts("\ts = save core and cpu on exit");
 	puts("\tl = load core and cpu on start");
@@ -44,6 +44,7 @@ void help(char *name) {
 	puts("\tm = init memory with n");
 	puts("\tf = CPU frequenzy n in MHz");
 	puts("\tx = load and execute filename");
+	puts("\tq = exit on HALT");
 	exit(1);
 }
 
@@ -67,10 +68,11 @@ int main(int argc, char **argv) {
 		{"initmem", required_argument, NULL, 'm'},
 		{"cpufreq", required_argument, NULL, 'f'},
 		{"run", required_argument, NULL, 'x'},
+		{"haltquit", no_argument, NULL, 'q'},
 		{NULL,0,NULL,0}
 	};
 
-	const char *short_opts = "hs:l:izm:f:x:";
+	const char *short_opts = "hs:l:izm:f:x:q";
 	int option_index=0;
 	int c;
 
@@ -104,6 +106,9 @@ int main(int argc, char **argv) {
 				s=&optarg[0];
 				while (*s) *p++=*s++;
 				*p='\0';
+				break;
+			case 'q':
+				q_flag=1;
 				break;
 			case '?':
 				help(pn);
