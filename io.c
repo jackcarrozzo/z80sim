@@ -28,12 +28,12 @@
 #define DEBUG_PIO   5
 #define DEBUG_CTC   5
 #define DEBUG_DART  5
-#define DEBUG_OTHER 3
+#define DEBUG_OTHER 5
 static t_iodebug iodebug;
 // levels messages can have:
 #define D_CONFW  3
 #define D_CONFR  3
-#define D_RWOPS  4
+#define D_RWOPS  3
 #define D_ERR		 2
 #define D_UNIMPL 3
 #define D_INFO	 4
@@ -103,8 +103,8 @@ void init_io(void) { // called at start to init all ports
 		dart[i].addrlen=sizeof(dart[i].remaddr);
 
 		if (0>(bind(dart[i].sock,(struct sockaddr *)&dart[i].ouraddr,sizeof(dart[i].ouraddr)))) {
-			perror("bind failed");
-			exit(1);
+			perror("socket bind failed");
+			//exit(1);
 		} else if (iodebug.dart>4) printf("Dart %c: socket bound successfully.\n",'A'+i);
 	}
 }
@@ -135,7 +135,7 @@ void run_counters(void) {
 			if (!--ctc[i].c_val) { // counter empty
 				ctc[i].c_val=ctc[i].tc; // refill it
 				
-				int_lsb=ctc[i].ivector; // set the interupt
+				int_lsb=ctc[i].ivector+(i<<1); // set the interupt (bits 2-1 are the chan)
 				int_type=INT_INT;
 			}
 		}
@@ -274,9 +274,14 @@ static void p_ctc_out(BYTE port,BYTE data) {
 		}
 	} else { // vector word
 		// there is only one interrupt vector register on the chip, since
-		// bits 2-1 contain the channel. TODO: emulate this.
+		// bits 2-1 contain the channel. 
 
-		thisctc->ivector=(data&0xf8)|(port<<1);  
+		//thisctc->ivector=(data&0xf8)|(port<<1);  
+		// set vector for all channels. TODO: this needs to be cleaner.
+		ctc[0].ivector=data&0xf8;
+		ctc[0].ivector=data&0xf8;
+		ctc[0].ivector=data&0xf8;
+		ctc[0].ivector=data&0xf8;
 			
 		if (iodebug.ctc>=D_CONFW) printf("--- CTC chan %d ivector set: 0x%02x.\n",port,data);
 	}
@@ -309,8 +314,8 @@ static BYTE p_dart_in(BYTE port) {
 				thisdart->recvlen=recvfrom(thisdart->sock,thisdart->rx_buf,DART_BUFSIZE,MSG_DONTWAIT,
 					(struct sockaddr *)&(thisdart->remaddr),&(thisdart->addrlen));
 
-				if (iodebug.dart>=D_ALL) printf("!-- sock read, %d bytes returned from %s.\n",
-					thisdart->recvlen,inet_ntoa(thisdart->remaddr.sin_addr));
+				if (iodebug.dart>=D_ALL) printf("!-- DART %c sock read, %d bytes returned from %s.\n",
+					chan,thisdart->recvlen,inet_ntoa(thisdart->remaddr.sin_addr));
 
 				if ((thisdart->recvlen>0)&&(!thisdart->have_client)) thisdart->have_client++;
 				
