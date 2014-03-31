@@ -24,6 +24,8 @@
 #include "global.h"
 #include "io.h"
 
+// TODO: move this into config.h, make dev struct types similar
+
 // default debugging thresholds
 #define DEBUG_PIO   5
 #define DEBUG_CTC   5
@@ -89,6 +91,7 @@ void init_io(void) { // called at start to init all ports
 	for (i=0;i<2;i++) {
 		dart_reset(&dart[i]);
 
+		// TODO: add ::1 listener for osx compat
 		if (0>(dart[i].sock=socket(AF_INET,SOCK_DGRAM,0))) {
 	    perror("cannot create socket\n");
 	    exit(1);   
