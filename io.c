@@ -55,8 +55,7 @@ static t_iodebug iodebug;
 
 // TODOs: 
 //
-// - fix the interrupt handling stuff (again), to have a
-// queue with acks.
+// - fix the interrupt handling stuff (again), emulate acking properly
 // - see if i cant clean up some of the globals and pass
 // struct ptrs around.
 
@@ -314,22 +313,28 @@ static BYTE p_dart_in(BYTE port) {
 		switch (thisdart->reg_ptr) {
 			case 0: // RR0
 				// check the socket before we can respond
+
+				// TODO: read directly into cb
 				thisdart->recvlen=recvfrom(thisdart->sock,thisdart->rx_buf,DART_BUFSIZE,MSG_DONTWAIT,
 					(struct sockaddr *)&(thisdart->remaddr),&(thisdart->addrlen));
 
 				if (iodebug.dart>=D_ALL) printf("!-- DART %c sock read, %d bytes returned from %s.\n",
 					chan,thisdart->recvlen,inet_ntoa(thisdart->remaddr.sin_addr));
 
-				if ((thisdart->recvlen>0)&&(!thisdart->have_client)) thisdart->have_client++;
+				if ((thisdart->recvlen)&&(!thisdart->have_client)) thisdart->have_client++;
 				
 				int i;
-				if (thisdart->recvlen>0) {
+				if (thisdart->recvlen) {
 					for (i=0;i<thisdart->recvlen;i++) {
-						if (thisdart->cbused<DART_BUFSIZE) {
+						if ((thisdart->cbused)<DART_BUFSIZE) {
 							thisdart->rx_fifo[thisdart->cbtail++]=thisdart->rx_buf[i];
-							if (thisdart->cbtail>DART_BUFSIZE) thisdart->cbtail-=DART_BUFSIZE; 
+							if (thisdart->cbtail>DART_BUFSIZE) thisdart->cbtail-=DART_BUFSIZE; // handle wrap 
 							thisdart->cbused++;
-						} else thisdart->rx_buf_overrun=1; // TODO: document this behavior
+						} else {
+							thisdart->rx_buf_overrun=1; // TODO: document this behavior
+							if (iodebug.dart>=D_ALL) printf("!-- DART %c rx buf overrun: %d bytes.\n",
+								chan,thisdart->recvlen);
+						}
 					}
 				}
 
