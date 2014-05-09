@@ -46,7 +46,10 @@
 #define WANT_COUNTERS // enable counter management
 #define INT_DEBUG 1 // prints when an interrupt fires
 
-#define DART_BUFSIZE 16
+// this buffer is large for the following reason: in hardware, typing on a console 
+// sends each charactor as it happens. however, we are using UDP sockets to emulate
+// serial connections, and client apps buffer locally then send a whole line on 'enter'.
+#define DART_BUFSIZE 128
 
 /*
  *	The following defines may be modified and activated by
