@@ -29,8 +29,8 @@
 // default debugging thresholds
 #define DEBUG_PIO   5
 #define DEBUG_CTC   5
-#define DEBUG_DART  5
-#define DEBUG_OTHER 5
+#define DEBUG_DART  3
+#define DEBUG_OTHER 3
 static t_iodebug iodebug;
 // levels messages can have:
 #define D_CONFW  3
