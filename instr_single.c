@@ -440,14 +440,13 @@ void cpu(void)
 
 #ifdef WANT_INT		/* CPU interrupt handling */
 		if (int_type) // if there is an interrupt available to handle
-			// TODO: rewrite the interrupt handling, this is wack
-			// http://www.z80.info/interrup.htm
+			// TODO: this could be reworked to be cleaner
+			// source info: http://www.z80.info/interrup.htm
 
 			switch (int_type) {
 			case INT_NMI: // NMIs	
 				int_type = INT_NONE; // ack the interrupt
-
-				IFF <<= 1;
+				IFF &= 0x02; // clear IFF1 
 
 				// this block stores the current execution address on the stack
 #ifdef WANT_SPC
@@ -468,48 +467,49 @@ void cpu(void)
 
 				break;
 			case INT_INT:	// maskable ints
-				if (3!=IFF) break; 
+				if (!(IFF&0x01)) break; // ints only accepted if IFF1 is set
+				IFF=0x00; // if the interrupt is accepted, IFF1 and 2 are cleared 
 	
 				switch (int_mode) {
-				case 0: // TODO
-					printf("Interrupt mode 0 unimplemented! Doing nothing.\n");
-					int_type = INT_NONE; // ack the interrupt anyway
+					case 0: // TODO
+						printf("Interrupt mode 0 unimplemented! Doing nothing.\n");
+						int_type = INT_NONE; // ack the interrupt anyway
 
-					break;
-				case 1: // mode 1 works: just jp to 0x0038;
-					int_type = INT_NONE;
+						break;
+					case 1: // mode 1 works: just jp to 0x0038;
+						int_type = INT_NONE;
 #ifdef WANT_SPC
-					if (STACK <= ram)
-						STACK =	ram + 65536L;
+						if (STACK <= ram)
+							STACK =	ram + 65536L;
 #endif
-					*--STACK = (PC - ram) >> 8;
+						*--STACK = (PC - ram) >> 8;
 #ifdef WANT_SPC
-					if (STACK <= ram)
-						STACK =	ram + 65536L;
+						if (STACK <= ram)
+							STACK =	ram + 65536L;
 #endif
-					*--STACK = (PC - ram);
-					PC = ram + 0x38;
+						*--STACK = (PC - ram);
+						PC = ram + 0x38;
 
-					if (INT_DEBUG) printf("--- Mode 1 Int: Jumping to 0x0038\n");
+						if (INT_DEBUG) printf("--- Mode 1 Int: Jumping to 0x0038\n");
 
-					break;
-				case 2:
-					int_vect=(I<<8)+int_lsb; // address of the vector table entry
+						break;
+					case 2:
+						int_vect=(I<<8)+int_lsb; // address of the vector table entry
 
-					// push current PC onto stack
-					*--STACK = (PC - ram) >> 8;
-					*--STACK = (PC - ram);
+						// push current PC onto stack
+						*--STACK = (PC - ram) >> 8;
+						*--STACK = (PC - ram);
 
-					// set the new PC from the vector lookup table
-					PC = ram + *(ram + int_vect); 			// LSB of the entry address
-					PC += (*(ram + int_vect + 1)) << 8;	// MSB
+						// set the new PC from the vector lookup table
+						PC = ram + *(ram + int_vect); 			// LSB of the entry address
+						PC += (*(ram + int_vect + 1)) << 8;	// MSB
 					
-					if (INT_DEBUG) // TODO: move this mode into a cli-configurable var
-						printf("--- Mode 2 Int: Lookup from 0x%04x, points to 0x%04lx.\n",int_vect,PC-ram);
+						if (INT_DEBUG) // TODO: move this mode into a cli-configurable var
+							printf("--- Mode 2 Int: Lookup from 0x%04x, points to 0x%04lx.\n",int_vect,PC-ram);
 
-					int_type = INT_NONE; // ack the interrupt
+						int_type = INT_NONE; // ack the interrupt
 
-					break;
+						break;
 				}
 				break;
 			}
