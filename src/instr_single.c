@@ -43,6 +43,9 @@ void check_gui_break(void);
 extern void run_counters(void);
 #endif
 
+void cpu_reset(void);
+int cpu_step(void);
+
 //static int op_notimpl(void);
 static int op_nop(void), op_halt(void), op_scf(void);
 static int op_ccf(void), op_cpl(void), op_daa(void);
@@ -119,15 +122,7 @@ static int op_rst20(void), op_rst28(void), op_rst30(void), op_rst38(void);
 extern int op_cb_handel(void), op_dd_handel(void);
 extern int op_ed_handel(void), op_fd_handel(void);
 
-/*
- *	This function builds the Z80 central processing unit.
- *	The opcode where PC points to is fetched from the memory
- *	and PC incremented by one. The opcode is used as an
- *	index to an array with function pointers, to execute a
- *	function which emulates this Z80 opcode.
- */
-void cpu(void)
-{
+
 	static int (*op_sim[256]) (void) =	{
 		op_nop,				/* 0x00	*/
 		op_ldbcnn,			/* 0x01	*/
@@ -387,6 +382,16 @@ void cpu(void)
 		op_rst38			/* 0xff	*/
 	};
 
+/*
+ *  This function builds the Z80 central processing unit.
+ *  The opcode where PC points to is fetched from the memory
+ *  and PC incremented by one. The opcode is used as an
+ *  index to an array with function pointers, to execute a
+ *  function which emulates this Z80 opcode.
+ */
+void cpu(void)
+{
+
 #ifdef WANT_TIM
 	register int t = 0;
 	struct timespec timer;
@@ -606,6 +611,29 @@ static int op_halt(void)		/* HALT */
 	busy_loop_cnt[0] = 0;
 
 	return(0);
+}
+
+void cpu_reset() {
+	cpu_state = CONTIN_RUN;
+	cpu_error = NONE;
+
+	PC=ram;
+
+	// todo: what are regs at reset? stack?
+}
+
+static int tstates;
+int cpu_step() {
+	tstates=(*op_sim[*PC++]) ();
+	R++;
+	return tstates;
+}
+
+int cpu_test() {
+	tstates=(*op_sim[*PC++]) ();
+
+	R++;
+	return tstates;
 }
 
 static int op_scf(void)			/* SCF */

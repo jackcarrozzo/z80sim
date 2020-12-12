@@ -1,6 +1,6 @@
 CC = clang  
 
-CFLAGS = -O3 -c -Wall
+CFLAGS = -O3 -c -Wall -g -fPIC
 
 OBJ =	main.o \
 	instr_single.o \
@@ -19,6 +19,9 @@ OBJ =	main.o \
 
 z80sim : $(OBJ)
 	$(CC) $(OBJ) $(LFLAGS) -o z80sim
+
+lib : $(OBJ)
+	clang -fPIC -shared $(OBJ) -g -o z80sim.so
 
 main.o : main.c	config.h global.h
 	$(CC) $(CFLAGS) main.c
