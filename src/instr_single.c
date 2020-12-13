@@ -620,8 +620,13 @@ void cpu_reset() {
 	cpu_error = NONE;
 
 	PC=ram;
+	wrk_ram=ram;
+	STACK=ram + 0xffff;
 
-	// todo: what are regs at reset? stack?
+	t_start=ram + 0xffff;
+	t_end=ram + 0xffff;
+
+	// TODO: confirm this is all the state needed (reg states?)
 }
 
 static int tstates;
