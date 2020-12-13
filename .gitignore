@@ -2,3 +2,4 @@
 z80sim
 *.swp
 tmp
+*.so

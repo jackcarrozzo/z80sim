@@ -587,6 +587,8 @@ static int op_halt(void)		/* HALT */
 	extern int busy_loop_cnt[];
 	struct timespec timer;
 
+	printf("HALT hit!\n"); // TODO:
+
 #ifdef BUS_8080
 	cpu_bus = CPU_WO | CPU_HLTA | CPU_MEMR;
 #endif

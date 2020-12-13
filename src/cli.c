@@ -63,8 +63,10 @@ static void do_fill(char *);
 static void do_move(char *);
 static void do_port(char *);
 static void do_reg(char *);
-static void print_head(void);
-static void print_reg(void);
+//static void print_head(void);
+//static void print_reg(void);
+void print_head(void);
+void print_reg(void);
 static void do_break(char *);
 static void do_hist(char *);
 static void do_count(char *);
@@ -615,7 +617,7 @@ static void do_reg(char *s)
 /*
  *	Output header for the CPU registers
  */
-static void print_head(void)
+void print_head(void)
 {
 	printf("\nPC   A  SZHPNC I  IFF BC   DE   HL   A'F' B'C' D'E' H'L' IX   IY   SP\n");
 }
@@ -623,7 +625,7 @@ static void print_head(void)
 /*
  *	Output all CPU registers
  */
-static void print_reg(void)
+void print_reg(void)
 {
 	printf("%04x %02x ", (unsigned int)(PC - ram), A);
 	printf("%c", F & S_FLAG	? '1' :	'0');
